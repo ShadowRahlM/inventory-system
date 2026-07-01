@@ -1,0 +1,59 @@
+{
+  "image_to_sku_mappings": [
+    {
+      "source_file": "WhatsApp Image 2026-07-01 at 11.44.49.jpeg",
+      "specification": "400x400 mm Ground Floor Tiles",
+      "total_mapped_items": 9,
+      "items": [
+        { "sku_code": "GG44546W", "page": 19, "category": "Floor Tile", "size": "400x400" },
+        { "sku_code": "GG44592W", "page": 19, "category": "Floor Tile", "size": "400x400" },
+        { "sku_code": "GG44509W", "page": 19, "category": "Floor Tile", "size": "400x400" },
+        { "sku_code": "GG44502W", "page": 21, "category": "Floor Tile", "size": "400x400" },
+        { "sku_code": "GG44589W", "page": 21, "category": "Floor Tile", "size": "400x400" },
+        { "sku_code": "GG44572W", "page": 23, "category": "Floor Tile", "size": "400x400" },
+        { "sku_code": "GS44581P", "page": 26, "category": "Floor Tile", "size": "400x400" },
+        { "sku_code": "GS44565P", "page": 27, "category": "Floor Tile", "size": "400x400" },
+        { "sku_code": "GS44558P", "page": 27, "category": "Floor Tile", "size": "400x400" }
+      ]
+    },
+    {
+      "source_file": "WhatsApp Image 2026-07-01 at 11.44.53.jpeg",
+      "specification": "300x300 mm Bathroom Floor Tiles",
+      "total_mapped_items": 22,
+      "items": [
+        { "sku_code": "GG33127X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33130X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33526X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33029X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33505X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33521X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33514X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33129X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33124X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33128X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33518X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33516X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33517X", "page": 16, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33503X", "page": 17, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33511X", "page": 17, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33502X", "page": 17, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33508X", "page": 17, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33085X", "page": 18, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33522X", "page": 18, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33504X", "page": 18, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33519X", "page": 18, "category": "Floor Tile", "size": "300x300" },
+        { "sku_code": "GG33010X", "page": 18, "category": "Floor Tile", "size": "300x300" }
+      ]
+    }
+  ],
+  "unmapped_image_files": [
+    {
+      "source_file": "WhatsApp Image 2026-07-01 at 11.44.50.jpeg",
+      "reason": "Contains 600x600 mm tiles, which are absent from the master catalog code list."
+    },
+    {
+      "source_file": "WhatsApp Image 2026-07-01 at 11.44.52.jpeg",
+      "reason": "Contains 600x500 mm, 120x30 mm, and 120x20 mm specialized formats absent from the master catalog code list."
+    }
+  ]
+}
