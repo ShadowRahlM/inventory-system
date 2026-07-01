@@ -144,6 +144,63 @@ npm test                # Vitest (3 tests)
 - `EXPO_PUBLIC_API_URL` env var for API base URL (defaults to `http://10.0.2.2:8000` for Android emulator)
 - TypeScript strict mode enabled
 
+## Production Deployment (Docker)
+
+### Architecture
+
+```
+nginx:80 → frontend (React SPA, built static files)
+         → /api/* → backend (Django ASGI on :8000) → PostgreSQL + Redis
+         → /media/* → backend (static/media files)
+         → /ws/* → backend (WebSocket via Channels)
+```
+
+### Stack
+
+| Service | Image | Role |
+|---|---|---|
+| `db` | postgres:16-alpine | Persistent storage |
+| `redis` | redis:7-alpine | Cache, Celery broker, Channels layer |
+| `backend` | python:3.13-slim | Django ASGI via gunicorn+uvicorn, 4 workers |
+| `frontend` | nginx:alpine | Serves built React app, proxies API/media/WS to backend |
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `backend/Dockerfile` | Python multi-stage build, collects static |
+| `frontend/Dockerfile` | Node build → nginx serve |
+| `frontend/nginx.conf` | Reverse proxy routes |
+| `docker-compose.yml` | Full stack orchestration |
+| `.env.production` | Environment variable template |
+
+### Run
+
+```sh
+# Build and start
+docker compose up -d --build
+
+# Or with custom env
+docker compose --env-file .env.production up -d --build
+
+# Stop
+docker compose down
+
+# View logs
+docker compose logs -f
+```
+
+### Configuration
+
+Copy `.env.production` to `.env`, edit values, then:
+
+```sh
+# Set a strong secret key
+python -c "import secrets; print(secrets.token_urlsafe(50))"
+
+# Update ALLOWED_HOSTS and CORS_ALLOWED_ORIGINS for your domain
+```
+
 ## Generic rules (from `.cursorrules.md`)
 
 - Never round inventory quantities or mix tile batches
