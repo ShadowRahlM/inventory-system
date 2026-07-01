@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+venv/
+.venv/
+.env
+
+# Django
+backend/media/tiles/*
+backend/media/extractions/*
+backend/media/uploads/*
+!backend/media/tiles/.gitkeep
+!backend/media/extractions/.gitkeep
+!backend/media/uploads/.gitkeep
+backend/db.sqlite3
+backend/*.db
+
+# Node
+node_modules/
+frontend/dist/
+mobile/dist/
+mobile/.expo/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pytest
+.pytest_cache/
+
+# Expo
+mobile/.claude/
+mobile/CLAUDE.md
+
+# Config (local overrides)
+.env
+.devin/
+*.local.json
