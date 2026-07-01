@@ -24,12 +24,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-bycq+36(qpgke3bmm#so6+-c5s=o%mwwj=%x)j@yf)r-j=dy-3"
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-bycq+36(qpgke3bmm#so6+-c5s=o%mwwj=%x)j@yf)r-j=dy-3")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 
 # Application definition
@@ -169,12 +169,8 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://localhost:8081",
-    "http://localhost:19006",
-]
+_cors = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://localhost:8081,http://localhost:19006")
+CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors.split(",")]
 CORS_ALLOW_CREDENTIALS = True
 
 # Redis Configuration

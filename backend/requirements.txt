@@ -19,3 +19,4 @@ PyMuPDF==1.28.0
 opencv-python-headless==4.13.0.92
 pytesseract==0.3.13
 reportlab==5.0.0
+uvicorn==0.30.6
