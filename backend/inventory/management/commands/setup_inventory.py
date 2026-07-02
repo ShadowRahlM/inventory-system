@@ -27,3 +27,10 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("Created user 'viewer' (password: viewer123)"))
         else:
             self.stdout.write("User 'viewer' already exists")
+
+        if not User.objects.filter(is_superuser=True).exists():
+            admin = User.objects.create_superuser(username='admin', password='admin123', email='admin@example.com')
+            admin.groups.add(managers_group)
+            self.stdout.write(self.style.SUCCESS("Created superuser 'admin' (password: admin123)"))
+        else:
+            self.stdout.write("Superuser already exists")
