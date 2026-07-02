@@ -15,22 +15,49 @@ class Command(BaseCommand):
         else:
             self.stdout.write("Group 'inventory_managers' already exists")
 
-        if not User.objects.filter(username='manager').exists():
-            manager = User.objects.create_user(username='manager', password='manager123')
-            manager.groups.add(managers_group)
-            self.stdout.write(self.style.SUCCESS("Created user 'manager' (password: manager123) in inventory_managers"))
-        else:
-            self.stdout.write("User 'manager' already exists")
+        default_users = [
+            {
+                'username': 'manager',
+                'password': 'manager123',
+                'is_superuser': False,
+                'is_staff': False,
+                'groups': [managers_group],
+            },
+            {
+                'username': 'viewer',
+                'password': 'viewer123',
+                'is_superuser': False,
+                'is_staff': False,
+                'groups': [],
+            },
+            {
+                'username': 'admin',
+                'password': 'admin123',
+                'is_superuser': True,
+                'is_staff': True,
+                'groups': [managers_group],
+            },
+        ]
 
-        if not User.objects.filter(username='viewer').exists():
-            viewer = User.objects.create_user(username='viewer', password='viewer123')
-            self.stdout.write(self.style.SUCCESS("Created user 'viewer' (password: viewer123)"))
-        else:
-            self.stdout.write("User 'viewer' already exists")
-
-        if not User.objects.filter(is_superuser=True).exists():
-            admin = User.objects.create_superuser(username='admin', password='admin123', email='admin@example.com')
-            admin.groups.add(managers_group)
-            self.stdout.write(self.style.SUCCESS("Created superuser 'admin' (password: admin123)"))
-        else:
-            self.stdout.write("Superuser already exists")
+        for cfg in default_users:
+            user, created = User.objects.get_or_create(
+                username=cfg['username'],
+                defaults={
+                    'is_superuser': cfg['is_superuser'],
+                    'is_staff': cfg['is_staff'],
+                },
+            )
+            if created:
+                user.is_superuser = cfg['is_superuser']
+                user.is_staff = cfg['is_staff']
+            # Always ensure password is correct on every startup
+            user.set_password(cfg['password'])
+            user.is_active = True
+            user.save()
+            user.groups.set(cfg['groups'])
+            status = "Created" if created else "Updated password"
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"{status} user '{cfg['username']}' (password: {cfg['password']})"
+                )
+            )

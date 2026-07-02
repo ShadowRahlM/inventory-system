@@ -34,7 +34,7 @@ def format_dimensions(size: str) -> str:
 
 
 class Command(BaseCommand):
-    help = "Import Goodwill catalog products from flat JSON array"
+    help = "Import Goodwill catalog products from flat JSON array or nested seed format"
 
     def add_arguments(self, parser):
         parser.add_argument('json_file', nargs='?', type=str, help='Path to JSON file (reads stdin if omitted)')
@@ -45,10 +45,24 @@ class Command(BaseCommand):
         else:
             data = json.loads(sys.stdin.read())
 
+        # Support nested format: {"catalog_items": [...], "image_to_sku_mappings": [...], ...}
+        if isinstance(data, dict) and 'catalog_items' in data:
+            items = data['catalog_items']
+        elif isinstance(data, dict) and 'image_to_sku_mappings' in data:
+            # The user's data has just the image mappings object — no tiles to import
+            self.stdout.write(self.style.WARNING("No catalog_items array found, skipping tile import"))
+            self._report_mappings(data)
+            return
+        elif isinstance(data, list):
+            items = data
+        else:
+            self.stdout.write(self.style.ERROR("Unrecognized JSON format"))
+            return
+
         created = 0
         skipped = 0
 
-        for item in data:
+        for item in items:
             code = item.get('code', '').strip()
             if not code:
                 continue
@@ -82,3 +96,22 @@ class Command(BaseCommand):
                 skipped += 1
 
         self.stdout.write(self.style.SUCCESS(f"Created {created} tiles, skipped {skipped} existing"))
+
+        # Also report image mappings if present
+        if isinstance(data, dict):
+            self._report_mappings(data)
+
+    def _report_mappings(self, data: dict):
+        mappings = data.get('image_to_sku_mappings', [])
+        unmapped = data.get('unmapped_image_files', [])
+        if mappings:
+            total_items = sum(m.get('total_mapped_items', 0) for m in mappings)
+            self.stdout.write(self.style.SUCCESS(
+                f"Image-to-SKU mappings: {len(mappings)} source files ({total_items} total items)"
+            ))
+            for m in mappings:
+                self.stdout.write(f"  - {m.get('source_file', '?')}: {m.get('specification', '?')} ({m.get('total_mapped_items', 0)} items)")
+        if unmapped:
+            self.stdout.write(self.style.WARNING(f"Unmapped image files: {len(unmapped)}"))
+            for u in unmapped:
+                self.stdout.write(f"  - {u.get('source_file', '?')}: {u.get('reason', '?')}")
