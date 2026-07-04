@@ -51,10 +51,20 @@ class Command(BaseCommand):
                 user.is_superuser = cfg['is_superuser']
                 user.is_staff = cfg['is_staff']
                 user.set_password(cfg['password'])
-            user.is_active = True
-            user.save()
-            user.groups.set(cfg['groups'])
-            status = "Created" if created else "Skipped (unchanged)"
+                user.is_active = True
+                user.save()
+                user.groups.set(cfg['groups'])
+                status = "Created"
+            else:
+                # Only fix password if it's broken (e.g. after DB restore)
+                if not user.check_password(cfg['password']):
+                    user.set_password(cfg['password'])
+                    user.is_active = True
+                    user.save()
+                    user.groups.set(cfg['groups'])
+                    status = "Fixed password"
+                else:
+                    status = "Skipped (unchanged)"
             self.stdout.write(
                 self.style.SUCCESS(
                     f"{status} user '{cfg['username']}' (password: {cfg['password']})"
