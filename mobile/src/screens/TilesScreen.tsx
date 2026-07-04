@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { listTiles, type Tile } from '../api/tiles';
 
@@ -6,27 +6,33 @@ export function TilesScreen() {
   const [search, setSearch] = useState('');
   const [tiles, setTiles] = useState<Tile[]>([]);
   const [loading, setLoading] = useState(true);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchTiles = (q: string) => {
+    setLoading(true);
+    listTiles(q || undefined)
+      .then((r) => setTiles(r.results))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    listTiles().then((r) => { setTiles(r.results); }).catch(() => {}).finally(() => setLoading(false));
+    fetchTiles('');
   }, []);
 
-  const filtered = search
-    ? tiles.filter((t) =>
-        t.sku.toLowerCase().includes(search.toLowerCase()) ||
-        t.name.toLowerCase().includes(search.toLowerCase())
-      )
-    : tiles;
+  const onChangeText = (text: string) => {
+    setSearch(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchTiles(text), 300);
+  };
 
-  if (loading) {
-    return <View style={styles.centered}><ActivityIndicator size="large" color="#2563eb" /></View>;
-  }
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
   return (
     <FlatList
       style={styles.container}
       contentContainerStyle={styles.content}
-      data={filtered}
+      data={tiles}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={() => (
         <>
@@ -35,8 +41,9 @@ export function TilesScreen() {
             style={styles.searchBar}
             placeholder="Search tiles..."
             value={search}
-            onChangeText={setSearch}
+            onChangeText={onChangeText}
           />
+          {loading && <ActivityIndicator size="small" color="#2563eb" style={{ marginBottom: 8 }} />}
         </>
       )}
       renderItem={({ item }) => (
@@ -51,7 +58,9 @@ export function TilesScreen() {
           <Text style={styles.pcs}>{item.pieces_per_carton} pcs</Text>
         </View>
       )}
-      ListEmptyComponent={() => <Text style={styles.empty}>No tiles found</Text>}
+      ListEmptyComponent={() =>
+        loading ? null : <Text style={styles.empty}>No tiles found</Text>
+      }
     />
   );
 }

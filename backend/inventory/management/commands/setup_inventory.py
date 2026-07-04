@@ -50,12 +50,11 @@ class Command(BaseCommand):
             if created:
                 user.is_superuser = cfg['is_superuser']
                 user.is_staff = cfg['is_staff']
-            # Always ensure password is correct on every startup
-            user.set_password(cfg['password'])
+                user.set_password(cfg['password'])
             user.is_active = True
             user.save()
             user.groups.set(cfg['groups'])
-            status = "Created" if created else "Updated password"
+            status = "Created" if created else "Skipped (unchanged)"
             self.stdout.write(
                 self.style.SUCCESS(
                     f"{status} user '{cfg['username']}' (password: {cfg['password']})"
