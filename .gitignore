@@ -44,3 +44,4 @@ mobile/CLAUDE.md
 .env
 .devin/
 *.local.json
+dump.rdb
