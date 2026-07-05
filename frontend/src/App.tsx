@@ -13,6 +13,9 @@ import { UserManagement } from './components/UserManagement';
 import { LowStockAlerts } from './components/LowStockAlerts';
 import { ReportsPage } from './components/ReportsPage';
 import { Catalogs } from './components/Catalogs';
+import { OrdersPage } from './components/OrdersPage';
+import { CustomerSupplierPage } from './components/CustomerSupplierPage';
+import { NotificationsPage } from './components/NotificationsPage';
 
 function Login() {
   const { setAuth } = useAuthStore();
@@ -153,6 +156,21 @@ function App() {
                 <Route path="/low-stock" element={
                   <ProtectedRoute>
                     <LowStockAlerts />
+                  </ProtectedRoute>
+                } />
+                <Route path="/orders" element={
+                  <ProtectedRoute>
+                    <OrdersPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/customers-suppliers" element={
+                  <ProtectedRoute>
+                    <CustomerSupplierPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/notifications" element={
+                  <ProtectedRoute>
+                    <NotificationsPage />
                   </ProtectedRoute>
                 } />
               </Routes>

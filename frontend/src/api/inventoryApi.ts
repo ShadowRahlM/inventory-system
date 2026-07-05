@@ -21,6 +21,13 @@ import type {
   CatalogExtractResult,
   StockSummary,
   MovementSummary,
+  Customer,
+  Supplier,
+  SalesOrder,
+  PurchaseOrder,
+  NotificationRecord,
+  CreateSalesOrderPayload,
+  CreatePurchaseOrderPayload,
 } from '../types/inventory';
 
 function extractData<T>(response: { data: ApiResponse<T> }): T {
@@ -128,5 +135,71 @@ export const inventoryApi = {
       api.post<ApiResponse<AdjustResult>>('/inventory/operations/adjust/', payload).then(extractData),
     transfer: (payload: TransferPayload) =>
       api.post<ApiResponse<TransferResult>>('/inventory/operations/transfer/', payload).then(extractData),
+  },
+
+  customers: {
+    list: () =>
+      api.get<PaginatedResponse<Customer>>('/inventory/customers/').then(r => r.data),
+    create: (data: Partial<Customer>) =>
+      api.post<Customer>('/inventory/customers/', data).then(r => r.data),
+    get: (id: string) =>
+      api.get<Customer>(`/inventory/customers/${id}/`).then(r => r.data),
+    update: (id: string, data: Partial<Customer>) =>
+      api.put<Customer>(`/inventory/customers/${id}/`, data).then(r => r.data),
+    delete: (id: string) =>
+      api.delete(`/inventory/customers/${id}/`).then(r => r.data),
+  },
+
+  suppliers: {
+    list: () =>
+      api.get<PaginatedResponse<Supplier>>('/inventory/suppliers/').then(r => r.data),
+    create: (data: Partial<Supplier>) =>
+      api.post<Supplier>('/inventory/suppliers/', data).then(r => r.data),
+    get: (id: string) =>
+      api.get<Supplier>(`/inventory/suppliers/${id}/`).then(r => r.data),
+    update: (id: string, data: Partial<Supplier>) =>
+      api.put<Supplier>(`/inventory/suppliers/${id}/`, data).then(r => r.data),
+    delete: (id: string) =>
+      api.delete(`/inventory/suppliers/${id}/`).then(r => r.data),
+  },
+
+  salesOrders: {
+    list: () =>
+      api.get<PaginatedResponse<SalesOrder>>('/inventory/sales-orders/').then(r => r.data),
+    get: (id: string) =>
+      api.get<SalesOrder>(`/inventory/sales-orders/${id}/`).then(r => r.data),
+  },
+
+  purchaseOrders: {
+    list: () =>
+      api.get<PaginatedResponse<PurchaseOrder>>('/inventory/purchase-orders/').then(r => r.data),
+    get: (id: string) =>
+      api.get<PurchaseOrder>(`/inventory/purchase-orders/${id}/`).then(r => r.data),
+  },
+
+  orderOperations: {
+    createSalesOrder: (payload: CreateSalesOrderPayload) =>
+      api.post<ApiResponse<SalesOrder>>('/inventory/order-operations/create_sales_order/', payload).then(extractData),
+    confirmSalesOrder: (order_id: string) =>
+      api.post<ApiResponse<SalesOrder>>('/inventory/order-operations/confirm_sales_order/', { order_id }).then(extractData),
+    shipSalesOrder: (order_id: string) =>
+      api.post<ApiResponse<SalesOrder>>('/inventory/order-operations/ship_sales_order/', { order_id }).then(extractData),
+    cancelSalesOrder: (order_id: string) =>
+      api.post<ApiResponse<SalesOrder>>('/inventory/order-operations/cancel_sales_order/', { order_id }).then(extractData),
+    createPurchaseOrder: (payload: CreatePurchaseOrderPayload) =>
+      api.post<ApiResponse<PurchaseOrder>>('/inventory/order-operations/create_purchase_order/', payload).then(extractData),
+    confirmPurchaseOrder: (order_id: string) =>
+      api.post<ApiResponse<PurchaseOrder>>('/inventory/order-operations/confirm_purchase_order/', { order_id }).then(extractData),
+    receivePurchaseOrder: (order_id: string, location: string = 'RECEIVING') =>
+      api.post<ApiResponse<PurchaseOrder>>('/inventory/order-operations/receive_purchase_order/', { order_id, location }).then(extractData),
+  },
+
+  notifications: {
+    list: () =>
+      api.get<PaginatedResponse<NotificationRecord>>('/inventory/notifications/').then(r => r.data),
+    markRead: (ids: string[]) =>
+      api.post<ApiResponse<null>>('/inventory/notifications/mark_read/', { ids }).then(r => r.data),
+    markAllRead: () =>
+      api.post<ApiResponse<{ marked_read: number }>>('/inventory/notifications/mark_all_read/').then(r => r.data),
   },
 };

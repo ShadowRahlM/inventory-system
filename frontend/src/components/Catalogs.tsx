@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '../api/inventoryApi';
 import { INVENTORY_KEYS } from '../hooks/useInventoryQueries';
@@ -69,7 +69,7 @@ export function Catalogs() {
     uploadMutation.mutate(formData);
   };
 
-  const allIds = data?.results?.map((c) => c.id) ?? [];
+  const allIds = useMemo(() => data?.results?.map((c) => c.id) ?? [], [data]);
   const allSelected = allIds.length > 0 && selectedIds.size === allIds.length;
 
   const toggleSelect = useCallback((id: string) => {

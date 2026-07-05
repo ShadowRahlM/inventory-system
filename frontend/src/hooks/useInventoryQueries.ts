@@ -9,6 +9,10 @@ import type {
   AdjustResult,
   TransferPayload,
   TransferResult,
+  SalesOrder,
+  PurchaseOrder,
+  CreateSalesOrderPayload,
+  CreatePurchaseOrderPayload,
 } from '../types/inventory';
 
 export const INVENTORY_KEYS = {
@@ -19,6 +23,11 @@ export const INVENTORY_KEYS = {
   movements: () => [...INVENTORY_KEYS.all, 'movements'] as const,
   auditLogs: () => [...INVENTORY_KEYS.all, 'audit-logs'] as const,
   users: () => [...INVENTORY_KEYS.all, 'users'] as const,
+  customers: () => [...INVENTORY_KEYS.all, 'customers'] as const,
+  suppliers: () => [...INVENTORY_KEYS.all, 'suppliers'] as const,
+  salesOrders: () => [...INVENTORY_KEYS.all, 'sales-orders'] as const,
+  purchaseOrders: () => [...INVENTORY_KEYS.all, 'purchase-orders'] as const,
+  notifications: () => [...INVENTORY_KEYS.all, 'notifications'] as const,
 };
 
 export function useTilesList() {
@@ -107,6 +116,116 @@ export function useTransferInventory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.stock() });
       queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.movements() });
+    },
+  });
+}
+
+export function useCustomersList() {
+  return useQuery({
+    queryKey: INVENTORY_KEYS.customers(),
+    queryFn: () => inventoryApi.customers.list(),
+  });
+}
+
+export function useSuppliersList() {
+  return useQuery({
+    queryKey: INVENTORY_KEYS.suppliers(),
+    queryFn: () => inventoryApi.suppliers.list(),
+  });
+}
+
+export function useSalesOrdersList() {
+  return useQuery({
+    queryKey: INVENTORY_KEYS.salesOrders(),
+    queryFn: () => inventoryApi.salesOrders.list(),
+  });
+}
+
+export function usePurchaseOrdersList() {
+  return useQuery({
+    queryKey: INVENTORY_KEYS.purchaseOrders(),
+    queryFn: () => inventoryApi.purchaseOrders.list(),
+  });
+}
+
+export function useNotificationsList() {
+  return useQuery({
+    queryKey: INVENTORY_KEYS.notifications(),
+    queryFn: () => inventoryApi.notifications.list(),
+    refetchInterval: 30000,
+  });
+}
+
+export function useCreateSalesOrder() {
+  const queryClient = useQueryClient();
+  return useMutation<SalesOrder, Error, CreateSalesOrderPayload>({
+    mutationFn: (payload) => inventoryApi.orderOperations.createSalesOrder(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.salesOrders() });
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.stock() });
+    },
+  });
+}
+
+export function useCreatePurchaseOrder() {
+  const queryClient = useQueryClient();
+  return useMutation<PurchaseOrder, Error, CreatePurchaseOrderPayload>({
+    mutationFn: (payload) => inventoryApi.orderOperations.createPurchaseOrder(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.purchaseOrders() });
+    },
+  });
+}
+
+export function useConfirmSalesOrder() {
+  const queryClient = useQueryClient();
+  return useMutation<SalesOrder, Error, string>({
+    mutationFn: (orderId) => inventoryApi.orderOperations.confirmSalesOrder(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.salesOrders() });
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.stock() });
+    },
+  });
+}
+
+export function useShipSalesOrder() {
+  const queryClient = useQueryClient();
+  return useMutation<SalesOrder, Error, string>({
+    mutationFn: (orderId) => inventoryApi.orderOperations.shipSalesOrder(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.salesOrders() });
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.stock() });
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.movements() });
+    },
+  });
+}
+
+export function useCancelSalesOrder() {
+  const queryClient = useQueryClient();
+  return useMutation<SalesOrder, Error, string>({
+    mutationFn: (orderId) => inventoryApi.orderOperations.cancelSalesOrder(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.salesOrders() });
+    },
+  });
+}
+
+export function useMarkNotificationsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => inventoryApi.notifications.markRead(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.notifications() });
+    },
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => inventoryApi.notifications.markAllRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.notifications() });
     },
   });
 }

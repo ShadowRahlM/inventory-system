@@ -23,6 +23,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 
 @api_view(['GET'])
@@ -47,5 +48,8 @@ urlpatterns = [
     path("api/auth/token/", TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name='token_refresh'),
     path("api/auth/me/", auth_me, name='auth_me'),
+    path("api/schema/", SpectacularAPIView.as_view(), name='schema'),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path("api/inventory/", include('inventory.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Tile, Batch, Inventory, Movement, AuditLog, TileCatalog
+from .models import Tile, Batch, Inventory, Movement, AuditLog, TileCatalog, Customer, Supplier, SalesOrder, PurchaseOrder, OrderLineItem, Notification
 
 User = get_user_model()
 
@@ -138,3 +138,74 @@ class TransferInventorySerializer(serializers.Serializer):
     cartons = serializers.IntegerField(min_value=0)
     loose_pieces = serializers.IntegerField(min_value=0)
     reference = serializers.CharField(required=False, allow_blank=True)
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class SupplierSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Supplier
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class OrderLineItemSerializer(serializers.ModelSerializer):
+    tile_sku = serializers.CharField(source='tile.sku', read_only=True)
+    tile_name = serializers.CharField(source='tile.name', read_only=True)
+    batch_number = serializers.CharField(source='batch.batch_number', read_only=True, allow_null=True)
+
+    class Meta:
+        model = OrderLineItem
+        fields = '__all__'
+        read_only_fields = ['id', 'line_total']
+
+
+class SalesOrderSerializer(serializers.ModelSerializer):
+    line_items = OrderLineItemSerializer(many=True, read_only=True)
+    customer_name = serializers.CharField(source='customer.name', read_only=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+
+    class Meta:
+        model = SalesOrder
+        fields = '__all__'
+        read_only_fields = ['id', 'order_number', 'order_date', 'total_amount', 'updated_at']
+
+
+class PurchaseOrderSerializer(serializers.ModelSerializer):
+    line_items = OrderLineItemSerializer(many=True, read_only=True)
+    supplier_name = serializers.CharField(source='supplier.name', read_only=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+
+    class Meta:
+        model = PurchaseOrder
+        fields = '__all__'
+        read_only_fields = ['id', 'order_number', 'order_date', 'updated_at']
+
+
+class CreateSalesOrderSerializer(serializers.Serializer):
+    customer_id = serializers.UUIDField()
+    notes = serializers.CharField(required=False, allow_blank=True)
+    items = serializers.ListField(child=serializers.DictField())
+
+
+class CreatePurchaseOrderSerializer(serializers.Serializer):
+    supplier_id = serializers.UUIDField()
+    expected_date = serializers.DateField(required=False, allow_null=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    items = serializers.ListField(child=serializers.DictField())
+
+
+class ConfirmOrderSerializer(serializers.Serializer):
+    order_id = serializers.UUIDField()
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at']

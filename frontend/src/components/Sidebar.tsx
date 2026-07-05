@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore, useUIStore } from '../lib/store';
+import { NotificationBell } from './NotificationBell';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: '📊' },
@@ -10,6 +11,8 @@ const navigation = [
   { name: 'Movements', href: '/movements', icon: '🔄' },
   { name: 'Catalogs', href: '/catalogs', icon: '📕' },
   { name: 'Audit Logs', href: '/audit-logs', icon: '📝' },
+  { name: 'Orders', href: '/orders', icon: '📋' },
+  { name: 'Customers/Suppliers', href: '/customers-suppliers', icon: '🏢' },
   { name: 'Reports', href: '/reports', icon: '📊' },
   { name: 'Low Stock', href: '/low-stock', icon: '⚠️' },
   { name: 'Users', href: '/users', icon: '👥' },
@@ -30,12 +33,15 @@ export function Sidebar() {
     <div className={`fixed left-0 top-0 h-full bg-gray-900 text-white transition-all duration-300 flex flex-col ${sidebarOpen ? 'w-64' : 'w-16'}`}>
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         {sidebarOpen && <span className="text-xl font-bold">Inventory System</span>}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 hover:bg-gray-700 rounded"
-        >
-          {sidebarOpen ? '◀' : '▶'}
-        </button>
+        <div className="flex items-center gap-1">
+          {sidebarOpen && <NotificationBell />}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 hover:bg-gray-700 rounded"
+          >
+            {sidebarOpen ? '◀' : '▶'}
+          </button>
+        </div>
       </div>
       <nav className="mt-4 flex-1">
         {navigation.map((item) => (

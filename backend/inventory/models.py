@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -175,3 +176,166 @@ class TileCatalog(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Customer(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    address = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class Supplier(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    address = models.TextField(blank=True)
+    lead_time_days = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class OrderStatus(models.TextChoices):
+    DRAFT = 'DRAFT', 'Draft'
+    CONFIRMED = 'CONFIRMED', 'Confirmed'
+    SHIPPED = 'SHIPPED', 'Shipped'
+    DELIVERED = 'DELIVERED', 'Delivered'
+    CANCELLED = 'CANCELLED', 'Cancelled'
+
+
+class SalesOrder(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order_number = models.CharField(max_length=50, unique=True, editable=False)
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='sales_orders')
+    status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.DRAFT)
+    order_date = models.DateTimeField(auto_now_add=True)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='sales_orders')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['order_number']),
+            models.Index(fields=['status']),
+            models.Index(fields=['order_date']),
+        ]
+        ordering = ['-order_date']
+
+    def save(self, *args, **kwargs):
+        if not self.order_number:
+            prefix = 'SO'
+            date_part = timezone.now().strftime('%Y%m%d')
+            last_today = SalesOrder.objects.filter(
+                order_number__startswith=f'{prefix}-{date_part}'
+            ).count()
+            self.order_number = f'{prefix}-{date_part}-{last_today + 1:04d}'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.order_number} - {self.customer.name}"
+
+
+class PurchaseOrder(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order_number = models.CharField(max_length=50, unique=True, editable=False)
+    supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT, related_name='purchase_orders')
+    status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.DRAFT)
+    order_date = models.DateTimeField(auto_now_add=True)
+    expected_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='purchase_orders')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['order_number']),
+            models.Index(fields=['status']),
+            models.Index(fields=['order_date']),
+        ]
+        ordering = ['-order_date']
+
+    def save(self, *args, **kwargs):
+        if not self.order_number:
+            prefix = 'PO'
+            date_part = timezone.now().strftime('%Y%m%d')
+            last_today = PurchaseOrder.objects.filter(
+                order_number__startswith=f'{prefix}-{date_part}'
+            ).count()
+            self.order_number = f'{prefix}-{date_part}-{last_today + 1:04d}'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.order_number} - {self.supplier.name}"
+
+
+class Notification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    NOTIFICATION_TYPES = [
+        ('LOW_STOCK', 'Low Stock'),
+        ('MOVEMENT', 'Movement'),
+        ('ORDER_STATUS', 'Order Status'),
+        ('SYSTEM', 'System'),
+    ]
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    data = models.JSONField(default=dict, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'is_read']),
+            models.Index(fields=['notification_type']),
+            models.Index(fields=['created_at']),
+        ]
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.notification_type}] {self.title}"
+
+
+class OrderLineItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sales_order = models.ForeignKey(SalesOrder, on_delete=models.CASCADE, null=True, blank=True, related_name='line_items')
+    purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, null=True, blank=True, related_name='line_items')
+    tile = models.ForeignKey(Tile, on_delete=models.PROTECT, related_name='order_line_items')
+    batch = models.ForeignKey(Batch, on_delete=models.PROTECT, null=True, blank=True, related_name='order_line_items')
+    quantity_cartons = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0)])
+    quantity_loose = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0)])
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    line_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['sales_order']),
+            models.Index(fields=['purchase_order']),
+            models.Index(fields=['tile']),
+        ]
+
+    def save(self, *args, **kwargs):
+        total_pieces = (self.quantity_cartons * self.tile.pieces_per_carton) + self.quantity_loose
+        self.line_total = self.unit_price * total_pieces
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        order = self.sales_order or self.purchase_order
+        return f"{order.order_number if order else 'No Order'} - {self.tile.sku}"

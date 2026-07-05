@@ -235,3 +235,106 @@ export interface MovementSummary {
   movements: MovementSummaryItem[];
   by_type: MovementByType[];
 }
+
+export type OrderStatus = 'DRAFT' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  lead_time_days: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderLineItem {
+  id: string;
+  sales_order: string | null;
+  purchase_order: string | null;
+  tile: string;
+  tile_sku: string;
+  tile_name: string;
+  batch: string | null;
+  batch_number: string | null;
+  quantity_cartons: number;
+  quantity_loose: number;
+  unit_price: number;
+  line_total: number;
+}
+
+export interface SalesOrder {
+  id: string;
+  order_number: string;
+  customer: string;
+  customer_name: string;
+  status: OrderStatus;
+  order_date: string;
+  total_amount: number;
+  notes: string;
+  created_by: number;
+  created_by_username: string;
+  line_items: OrderLineItem[];
+  updated_at: string;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  order_number: string;
+  supplier: string;
+  supplier_name: string;
+  status: OrderStatus;
+  order_date: string;
+  expected_date: string | null;
+  notes: string;
+  created_by: number;
+  created_by_username: string;
+  line_items: OrderLineItem[];
+  updated_at: string;
+}
+
+export interface NotificationRecord {
+  id: string;
+  notification_type: 'LOW_STOCK' | 'MOVEMENT' | 'ORDER_STATUS' | 'SYSTEM';
+  title: string;
+  message: string;
+  data: Record<string, unknown>;
+  user: number | null;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface CreateSalesOrderPayload {
+  customer_id: string;
+  notes?: string;
+  items: Array<{
+    tile_id: string;
+    batch_id?: string;
+    cartons?: number;
+    loose_pieces?: number;
+    unit_price?: number;
+  }>;
+}
+
+export interface CreatePurchaseOrderPayload {
+  supplier_id: string;
+  expected_date?: string;
+  notes?: string;
+  items: Array<{
+    tile_id: string;
+    cartons?: number;
+    loose_pieces?: number;
+    unit_price?: number;
+  }>;
+}

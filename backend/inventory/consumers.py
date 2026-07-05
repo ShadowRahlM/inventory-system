@@ -32,3 +32,15 @@ class InventoryConsumer(AsyncWebsocketConsumer):
             'type': 'inventory_update',
             'data': event['data']
         }))
+
+    async def low_stock_alert(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'low_stock_alert',
+            'data': event['data']
+        }))
+
+    async def movement_notification(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'movement_notification',
+            'data': event['data']
+        }))
