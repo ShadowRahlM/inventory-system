@@ -2,10 +2,13 @@ import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '../api/inventoryApi';
 import { INVENTORY_KEYS } from '../hooks/useInventoryQueries';
+import { useAuthStore } from '../lib/store';
 import type { TileProduct } from '../types/inventory';
 
 export function TileList() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
   const [editingTile, setEditingTile] = useState<TileProduct | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -72,7 +75,7 @@ export function TileList() {
 
   return (
     <div>
-      {selectedIds.size > 0 && (
+      {isAdmin && selectedIds.size > 0 && (
         <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
           <span className="text-sm text-blue-800 font-medium">
             {selectedIds.size} tile{selectedIds.size !== 1 ? 's' : ''} selected
@@ -93,9 +96,11 @@ export function TileList() {
         <table className="min-w-full bg-white border border-gray-300">
           <thead>
             <tr className="bg-gray-100">
-              <th className="px-4 py-2 border-b w-10">
-                <input type="checkbox" checked={allSelected} onChange={toggleAll} className="cursor-pointer" />
-              </th>
+              {isAdmin && (
+                <th className="px-4 py-2 border-b w-10">
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} className="cursor-pointer" />
+                </th>
+              )}
               <th className="px-4 py-2 border-b">Image</th>
               <th className="px-4 py-2 border-b">SKU</th>
               <th className="px-4 py-2 border-b">Name</th>
@@ -111,9 +116,11 @@ export function TileList() {
           <tbody>
             {tiles?.results?.map((tile: TileProduct) => (
               <tr key={tile.id} className={`hover:bg-gray-50 ${selectedIds.has(tile.id) ? 'bg-blue-50' : ''}`}>
-                <td className="px-4 py-2 border-b">
-                  <input type="checkbox" checked={selectedIds.has(tile.id)} onChange={() => toggleSelect(tile.id)} className="cursor-pointer" />
-                </td>
+                {isAdmin && (
+                  <td className="px-4 py-2 border-b">
+                    <input type="checkbox" checked={selectedIds.has(tile.id)} onChange={() => toggleSelect(tile.id)} className="cursor-pointer" />
+                  </td>
+                )}
                 <td className="px-4 py-2 border-b">
                   {tile.image ? (
                     <img src={tile.image} alt={tile.sku} className="w-12 h-12 object-cover rounded" loading="lazy" />
@@ -144,7 +151,7 @@ export function TileList() {
                 <td className="px-4 py-2 border-b">{tile.category}</td>
                 <td className="px-4 py-2 border-b">
                   <button onClick={() => setEditingTile(tile)} className="text-blue-600 hover:text-blue-800 mr-2 text-sm">Edit</button>
-                  <button onClick={() => { setDeleteId(tile.id); setDeleteError(null); }} className="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                  {isAdmin && <button onClick={() => { setDeleteId(tile.id); setDeleteError(null); }} className="text-red-600 hover:text-red-800 text-sm">Delete</button>}
                 </td>
               </tr>
             ))}

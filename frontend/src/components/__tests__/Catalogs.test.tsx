@@ -47,7 +47,7 @@ vi.mock('../../api/inventoryApi', () => ({ inventoryApi }))
 
 beforeEach(() => {
   vi.clearAllMocks()
-  useAuthStore.setState({ isAuthenticated: true, user: { username: 'test', role: 'viewer' } })
+  useAuthStore.setState({ isAuthenticated: true, user: { username: 'test', role: 'admin' } })
 })
 
 describe('Catalogs', () => {

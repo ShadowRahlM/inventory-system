@@ -2,10 +2,13 @@ import { useState, useRef, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '../api/inventoryApi';
 import { INVENTORY_KEYS } from '../hooks/useInventoryQueries';
+import { useAuthStore } from '../lib/store';
 import type { TileCatalog, CatalogExtractResult } from '../types/inventory';
 
 export function Catalogs() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
   const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -102,7 +105,7 @@ export function Catalogs() {
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">Tile Catalogs</h1>
 
-      {selectedIds.size > 0 && (
+      {isAdmin && selectedIds.size > 0 && (
         <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
           <span className="text-sm text-blue-800 font-medium">
             {selectedIds.size} catalog{selectedIds.size !== 1 ? 's' : ''} selected
@@ -123,14 +126,16 @@ export function Catalogs() {
         </div>
       )}
 
-      <div className="flex items-center mb-4">
-        {data?.results && data.results.length > 1 && (
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-            <input type="checkbox" checked={allSelected} onChange={toggleAll} />
-            <span>Select all {data.results.length} catalogs</span>
-          </label>
-        )}
-      </div>
+      {isAdmin && (
+        <div className="flex items-center mb-4">
+          {data?.results && data.results.length > 1 && (
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+              <span>Select all {data.results.length} catalogs</span>
+            </label>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleUpload} className="bg-white p-6 rounded-lg shadow border mb-8 max-w-lg">
         <h2 className="text-xl font-semibold mb-4">Upload Catalog PDF</h2>
@@ -172,7 +177,7 @@ export function Catalogs() {
               <div key={catalog.id} className={`bg-white p-4 rounded-lg shadow border ${isSelected ? 'ring-2 ring-blue-400' : ''}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(catalog.id)} className="cursor-pointer" />
+                    {isAdmin && <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(catalog.id)} className="cursor-pointer" />}
                     <div>
                       <h3 className="font-semibold">{catalog.name}</h3>
                       {catalog.description && <p className="text-gray-600 text-sm">{catalog.description}</p>}
@@ -184,7 +189,7 @@ export function Catalogs() {
                   </div>
                   <div className="flex gap-2">
                     <a href={catalog.file} target="_blank" rel="noopener noreferrer" className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm">View PDF</a>
-                    <button onClick={() => handleDelete(catalog.id)} className="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 text-sm">Delete</button>
+                    {isAdmin && <button onClick={() => handleDelete(catalog.id)} className="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 text-sm">Delete</button>}
                     <button
                       onClick={() => extractMutation.mutate(catalog.id)}
                       disabled={extractMutation.isPending && extractMutation.variables === catalog.id}
