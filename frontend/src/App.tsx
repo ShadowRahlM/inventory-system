@@ -16,6 +16,7 @@ import { Catalogs } from './components/Catalogs';
 import { OrdersPage } from './components/OrdersPage';
 import { CustomerSupplierPage } from './components/CustomerSupplierPage';
 import { NotificationsPage } from './components/NotificationsPage';
+import { SyncConflictsPage } from './components/SyncConflictsPage';
 
 function Login() {
   const { setAuth } = useAuthStore();
@@ -171,6 +172,11 @@ function App() {
                 <Route path="/notifications" element={
                   <ProtectedRoute>
                     <NotificationsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/sync-conflicts" element={
+                  <ProtectedRoute>
+                    <SyncConflictsPage />
                   </ProtectedRoute>
                 } />
               </Routes>

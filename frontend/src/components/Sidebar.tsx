@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore, useUIStore } from '../lib/store';
 import { NotificationBell } from './NotificationBell';
+import { useSyncConflictsList } from '../hooks/useInventoryQueries';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: '📊' },
@@ -23,6 +24,9 @@ export function Sidebar() {
   const navigate = useNavigate();
   const { sidebarOpen, setSidebarOpen } = useUIStore();
   const { user, logout } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
+  const { data: conflictsData } = useSyncConflictsList();
+  const unresolvedConflicts = conflictsData?.results?.filter(c => !c.resolved).length ?? 0;
 
   const handleLogout = () => {
     logout();
@@ -56,6 +60,26 @@ export function Sidebar() {
             {sidebarOpen && <span className="ml-3">{item.name}</span>}
           </Link>
         ))}
+        {isAdmin && (
+          <Link
+            to="/sync-conflicts"
+            className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
+              location.pathname === '/sync-conflicts' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+            }`}
+          >
+            <span className="text-xl">🔀</span>
+            {sidebarOpen && (
+              <span className="ml-3 flex items-center gap-2">
+                Sync Conflicts
+                {unresolvedConflicts > 0 && (
+                  <span className="bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 min-w-5 text-center">
+                    {unresolvedConflicts > 9 ? '9+' : unresolvedConflicts}
+                  </span>
+                )}
+              </span>
+            )}
+          </Link>
+        )}
       </nav>
       <div className={`border-t border-gray-700 ${sidebarOpen ? 'p-4' : 'p-2 flex justify-center'}`}>
         {sidebarOpen && (

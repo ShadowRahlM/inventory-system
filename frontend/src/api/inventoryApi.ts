@@ -28,6 +28,7 @@ import type {
   NotificationRecord,
   CreateSalesOrderPayload,
   CreatePurchaseOrderPayload,
+  SyncConflict,
 } from '../types/inventory';
 
 function extractData<T>(response: { data: ApiResponse<T> }): T {
@@ -201,5 +202,12 @@ export const inventoryApi = {
       api.post<ApiResponse<null>>('/inventory/notifications/mark_read/', { ids }).then(r => r.data),
     markAllRead: () =>
       api.post<ApiResponse<{ marked_read: number }>>('/inventory/notifications/mark_all_read/').then(r => r.data),
+  },
+
+  syncConflicts: {
+    list: () =>
+      api.get<PaginatedResponse<SyncConflict>>('/inventory/sync-conflicts/').then(r => r.data),
+    resolve: (id: string, resolution: 'local' | 'remote') =>
+      api.post<SyncConflict>(`/inventory/sync-conflicts/${id}/resolve/`, { resolution }).then(r => r.data),
   },
 };

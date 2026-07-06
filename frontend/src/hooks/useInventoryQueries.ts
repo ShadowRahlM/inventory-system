@@ -28,6 +28,7 @@ export const INVENTORY_KEYS = {
   salesOrders: () => [...INVENTORY_KEYS.all, 'sales-orders'] as const,
   purchaseOrders: () => [...INVENTORY_KEYS.all, 'purchase-orders'] as const,
   notifications: () => [...INVENTORY_KEYS.all, 'notifications'] as const,
+  syncConflicts: () => [...INVENTORY_KEYS.all, 'sync-conflicts'] as const,
 };
 
 export function useTilesList() {
@@ -226,6 +227,24 @@ export function useMarkAllNotificationsRead() {
     mutationFn: () => inventoryApi.notifications.markAllRead(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.notifications() });
+    },
+  });
+}
+
+export function useSyncConflictsList() {
+  return useQuery({
+    queryKey: INVENTORY_KEYS.syncConflicts(),
+    queryFn: () => inventoryApi.syncConflicts.list(),
+  });
+}
+
+export function useResolveSyncConflict() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, resolution }: { id: string; resolution: 'local' | 'remote' }) =>
+      inventoryApi.syncConflicts.resolve(id, resolution),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.syncConflicts() });
     },
   });
 }

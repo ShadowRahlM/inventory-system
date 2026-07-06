@@ -338,3 +338,16 @@ export interface CreatePurchaseOrderPayload {
     unit_price?: number;
   }>;
 }
+
+export interface SyncConflict {
+  id: string;
+  model_name: string;
+  record_id: string;
+  peer_url: string;
+  local_data: Record<string, unknown>;
+  remote_data: Record<string, unknown>;
+  created_at: string;
+  resolved: boolean;
+  resolution: 'local' | 'remote' | null;
+  resolved_at: string | null;
+}
