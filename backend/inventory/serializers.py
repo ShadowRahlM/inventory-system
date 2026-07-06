@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Tile, Batch, Inventory, Movement, AuditLog, TileCatalog, Customer, Supplier, SalesOrder, PurchaseOrder, OrderLineItem, Notification
+from .models import Tile, Batch, Inventory, Movement, AuditLog, TileCatalog, Customer, Supplier, SalesOrder, PurchaseOrder, OrderLineItem, Notification, SyncConflict
 
 User = get_user_model()
 
@@ -207,5 +207,12 @@ class ConfirmOrderSerializer(serializers.Serializer):
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at']
+
+
+class SyncConflictSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SyncConflict
         fields = '__all__'
         read_only_fields = ['id', 'created_at']

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "channels",
     "drf_spectacular",
+    "django_celery_beat",
     "inventory",
 ]
 
@@ -159,6 +160,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
     "DEFAULT_FILTER_BACKENDS": (
+        "inventory.filters.UpdatedSinceFilter",
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ),
@@ -218,6 +220,10 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# Sync peers (comma-separated URLs, e.g. http://192.168.1.101,http://192.168.1.102)
+SYNC_PEERS = os.getenv("SYNC_PEERS", "")
 
 # Channels Configuration
 ASGI_APPLICATION = "inventory_system.asgi.application"

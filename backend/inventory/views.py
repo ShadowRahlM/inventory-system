@@ -11,18 +11,19 @@ from django.db import transaction
 from django.db.models import Count, Q, Sum
 
 from rest_framework import viewsets, status
+from django.utils import timezone
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Tile, Batch, Inventory, Movement, AuditLog, TileCatalog, Customer, Supplier, SalesOrder, PurchaseOrder, OrderLineItem, OrderStatus, Notification
+from .models import Tile, Batch, Inventory, Movement, AuditLog, TileCatalog, Customer, Supplier, SalesOrder, PurchaseOrder, OrderLineItem, OrderStatus, Notification, SyncConflict
 from .serializers import (
     TileSerializer, BatchSerializer, InventorySerializer, MovementSerializer, AuditLogSerializer, TileCatalogSerializer,
     ReceiveInventorySerializer, DispatchInventorySerializer, AdjustInventorySerializer, TransferInventorySerializer,
     UserSerializer, SetRoleSerializer,
     CustomerSerializer, SupplierSerializer, SalesOrderSerializer, PurchaseOrderSerializer, OrderLineItemSerializer,
     CreateSalesOrderSerializer, CreatePurchaseOrderSerializer, ConfirmOrderSerializer,
-    NotificationSerializer,
+    NotificationSerializer, SyncConflictSerializer,
 )
 from .services import InventoryService, OrderService
 from .permissions import IsInventoryViewer, CanPerformInventoryOperations, IsAdminUser
@@ -828,6 +829,39 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         qs = self.get_queryset().filter(is_read=False)
         count = qs.update(is_read=True)
         return Response({'success': True, 'marked_read': count})
+
+
+class SyncConflictViewSet(viewsets.ModelViewSet):
+    queryset = SyncConflict.objects.all()
+    serializer_class = SyncConflictSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    filterset_fields = ['model_name', 'resolved']
+    ordering = ['-created_at']
+
+    @action(detail=True, methods=['post'])
+    def resolve(self, request, pk=None):
+        conflict = self.get_object()
+        resolution = request.data.get('resolution')
+        if resolution not in ('local', 'remote'):
+            return Response({'error': "resolution must be 'local' or 'remote'"}, status=status.HTTP_400_BAD_REQUEST)
+        conflict.resolution = resolution
+        conflict.resolved = True
+        conflict.resolved_at = timezone.now()
+        conflict.save()
+
+        from django.apps import apps
+        model = apps.get_model('inventory', conflict.model_name)
+        if resolution == 'remote' and model:
+            try:
+                instance = model.objects.get(id=conflict.record_id)
+                for key, val in conflict.remote_data.items():
+                    if key != 'id' and hasattr(instance, key):
+                        setattr(instance, key, val)
+                instance.save()
+            except model.DoesNotExist:
+                model.objects.create(**conflict.remote_data)
+
+        return Response(SyncConflictSerializer(conflict).data)
 
 
 class BarcodeViewSet(viewsets.ViewSet):

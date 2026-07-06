@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TileViewSet, BatchViewSet, InventoryViewSet, MovementViewSet, AuditLogViewSet, TileCatalogViewSet, InventoryOperationViewSet, ReportViewSet, UserViewSet, CustomerViewSet, SupplierViewSet, SalesOrderViewSet, PurchaseOrderViewSet, OrderOperationViewSet, BarcodeViewSet, NotificationViewSet
+from .views import TileViewSet, BatchViewSet, InventoryViewSet, MovementViewSet, AuditLogViewSet, TileCatalogViewSet, InventoryOperationViewSet, ReportViewSet, UserViewSet, CustomerViewSet, SupplierViewSet, SalesOrderViewSet, PurchaseOrderViewSet, OrderOperationViewSet, BarcodeViewSet, NotificationViewSet, SyncConflictViewSet
 
 router = DefaultRouter()
 router.register(r'tiles', TileViewSet, basename='tile')
@@ -19,6 +19,7 @@ router.register(r'purchase-orders', PurchaseOrderViewSet, basename='purchaseorde
 router.register(r'order-operations', OrderOperationViewSet, basename='orderoperation')
 router.register(r'barcodes', BarcodeViewSet, basename='barcode')
 router.register(r'notifications', NotificationViewSet, basename='notification')
+router.register(r'sync-conflicts', SyncConflictViewSet, basename='syncconflict')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -57,6 +57,8 @@ class Batch(models.Model):
     supplier = models.CharField(max_length=200)
     received_date = models.DateField()
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [
@@ -339,3 +341,48 @@ class OrderLineItem(models.Model):
     def __str__(self):
         order = self.sales_order or self.purchase_order
         return f"{order.order_number if order else 'No Order'} - {self.tile.sku}"
+
+
+class SyncState(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    peer_url = models.URLField(max_length=500)
+    model_name = models.CharField(max_length=100)
+    last_synced_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('peer_url', 'model_name')
+        verbose_name_plural = 'Sync states'
+
+    def __str__(self):
+        return f"{self.peer_url} / {self.model_name}"
+
+
+class SyncConflict(models.Model):
+    RESOLUTION_CHOICES = [
+        ('local', 'Keep Local'),
+        ('remote', 'Use Remote'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    model_name = models.CharField(max_length=100)
+    record_id = models.UUIDField()
+    peer_url = models.URLField(max_length=500)
+    local_data = models.JSONField()
+    remote_data = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved = models.BooleanField(default=False)
+    resolution = models.CharField(max_length=20, null=True, blank=True, choices=RESOLUTION_CHOICES)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['model_name', 'record_id']),
+            models.Index(fields=['resolved']),
+            models.Index(fields=['created_at']),
+        ]
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Conflict: {self.model_name} / {self.record_id} from {self.peer_url}"

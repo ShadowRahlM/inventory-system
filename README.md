@@ -121,6 +121,8 @@ All endpoints are at `/api/...` and require JWT authentication.
 | `/api/inventory/users/` | GET/POST | User management (admin only) |
 | `/api/inventory/tile-catalogs/` | GET/POST | Upload PDF catalogs |
 | `/api/inventory/tile-catalogs/<id>/extract/` | POST | Extract products from uploaded PDF |
+| `/api/inventory/sync-conflicts/` | GET | List sync conflicts (admin only) |
+| `/api/inventory/sync-conflicts/<id>/resolve/` | POST | Resolve a conflict (keep local or use remote) |
 
 ## Testing
 
@@ -143,7 +145,7 @@ cd mobile && npm test
 docker compose up -d --build
 ```
 
-Services: `db` (PostgreSQL 16) → `redis` (Redis 7) → `backend` (Django ASGI, 4 workers) → `frontend` (nginx).
+Services: `db` (PostgreSQL 16) → `redis` (Redis 7) → `backend` (Django ASGI, 4 workers) → `worker` (Celery, sync + tasks) → `frontend` (nginx).
 
 ### Environment Variables
 
@@ -183,11 +185,90 @@ EXPO_PUBLIC_API_URL=http://<your-server-ip> npx expo start
 
 The mobile app connects to the nginx proxy at port 80 (`/api/...` → `backend:8000`).
 
+## Multi-Laptop Sync
+
+The system supports offline-first editing on multiple Windows laptops. Each laptop runs its own local Docker stack; when on the same LAN, they sync automatically every 10 seconds via the built-in Celery sync task.
+
+### How it works
+
+```
+Laptop A (192.168.1.101)    Laptop B (192.168.1.102)    Laptop C (192.168.1.103)
+┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
+│ localhost:80        │    │ localhost:80        │    │ localhost:80        │
+│ Django + PostgreSQL │◄──►│ Django + PostgreSQL │◄──►│ Django + PostgreSQL │
+│ Celery sync (10s)   │    │ Celery sync (10s)   │    │ Celery sync (10s)   │
+└─────────────────────┘    └─────────────────────┘    └─────────────────────┘
+       ▲                          ▲                          ▲
+       │                          │                          │
+  Works offline              Works offline              Works offline
+```
+
+### One-time setup per laptop
+
+1. **Run `setup.ps1` as Administrator** — installs Docker Desktop (WSL2), Git, clones the repo, builds and starts the system.
+
+2. **Find your laptop's IP address**:
+   ```powershell
+   ipconfig | findstr IPv4
+   ```
+   Look for your active network adapter (e.g., `192.168.1.101`).
+
+3. **Configure `SYNC_PEERS`** — edit the `.env` file in the project directory:
+   ```
+   SYNC_PEERS=http://192.168.1.101,http://192.168.1.102
+   ```
+   Each laptop lists the **other** laptops' IPs (not its own).
+
+   Example for 3 laptops:
+   | Laptop | IP | SYNC_PEERS |
+   |---|---|---|
+   | A | `192.168.1.101` | `http://192.168.1.102,http://192.168.1.103` |
+   | B | `192.168.1.102` | `http://192.168.1.101,http://192.168.1.103` |
+   | C | `192.168.1.103` | `http://192.168.1.101,http://192.168.1.102` |
+
+4. **Restart containers** to pick up the new config:
+   ```powershell
+   docker compose up -d
+   ```
+
+5. **Verify sync is working** — check the logs:
+   ```powershell
+   docker compose logs worker --tail 20
+   ```
+   You should see log lines like:
+   ```
+   Synced Tile: pulled=0 pushed=0 from http://192.168.1.102
+   Synced Inventory: pulled=2 pushed=1 from http://192.168.1.102
+   ```
+
+### How sync works
+
+- **Every 10 seconds**, the Celery worker checks all configured peers.
+- It pulls new/changed records via `?updated_since=` (tiles, batches, inventory, movements, orders, customers, suppliers).
+- It pushes local changes to peers.
+- **Conflicts** happen when two laptops edit the same inventory record while offline. These are saved for manual review:
+  - Visit the **Sync Conflicts** page in the UI (admin only)
+  - See the local vs remote data side-by-side
+  - Click "Keep Local" or "Use Remote" to resolve
+  - Conflicts are also visible at `GET /api/inventory/sync-conflicts/`
+
+### Firewall notes
+
+Windows Firewall may block the sync connection. On each laptop, allow inbound connections on port 80:
+
+```powershell
+netsh advfirewall firewall add rule name="Inventory Sync" dir=in action=allow protocol=TCP localport=80
+```
+
+### Offline behavior
+
+When a peer is unreachable (laptop off, different network), the sync task silently skips it. Changes are queued locally and sync automatically when the peer comes back online. No data is lost.
+
 ## Data Seed Files
 
 | File | Contents |
 |---|---|
-| `backend/data/catalog_seed.json` | 254 tile catalog items (SKU, category, collection, size) |
+| `backend/data/catalog_seed.json` | 327 tile catalog items (SKU, category, collection, size) |
 | `backend/data/image_sku_mappings.json` | Image-to-SKU mappings (2 source files, 31 items) + unmapped files |
 
 These are automatically imported on every `docker compose up` via `import_goodwill_catalog`.

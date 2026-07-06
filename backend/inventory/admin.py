@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Tile, Batch, Inventory, Movement, AuditLog, TileCatalog, Customer, Supplier, SalesOrder, PurchaseOrder, OrderLineItem, Notification
+from .models import Tile, Batch, Inventory, Movement, AuditLog, TileCatalog, Customer, Supplier, SalesOrder, PurchaseOrder, OrderLineItem, Notification, SyncState, SyncConflict
 
 
 @admin.register(Tile)
@@ -78,3 +78,15 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = ['notification_type', 'title', 'user', 'is_read', 'created_at']
     list_filter = ['notification_type', 'is_read', 'created_at']
     search_fields = ['title', 'message']
+
+
+@admin.register(SyncState)
+class SyncStateAdmin(admin.ModelAdmin):
+    list_display = ['peer_url', 'model_name', 'last_synced_at', 'updated_at']
+    list_filter = ['model_name']
+
+
+@admin.register(SyncConflict)
+class SyncConflictAdmin(admin.ModelAdmin):
+    list_display = ['model_name', 'record_id', 'peer_url', 'resolved', 'created_at']
+    list_filter = ['model_name', 'resolved']
