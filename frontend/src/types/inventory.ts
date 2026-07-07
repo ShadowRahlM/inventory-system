@@ -184,27 +184,17 @@ export interface TileCatalog {
   id: string;
   name: string;
   description: string;
-  file: string;
+  json_data: Record<string, unknown>;
+  processed: boolean;
   uploaded_at: string;
   uploaded_by: number | null;
   uploaded_by_username: string | null;
 }
 
-export interface CatalogExtractResult {
-  products_found: number;
-  products_created: number;
-  products_skipped: number;
-  total_pages: number;
-  processed_pages: number;
-  cells_per_page: number[];
-  page_errors: string[];
-  products: TileProduct[];
-  breakdown: {
-    no_sku_detected: number;
-    already_in_db: number;
-    error: number;
-  };
-  debug_first_50_sku: Array<{ sku: string; name: string; page: number; image_filename: string; ocr_snippet: string; brand: string; series: string; tier: string; tile_type: string; finish: string; thickness: string; coverage_per_box: string; use_case: string }>;
+export interface CatalogProcessResult {
+  created: number;
+  skipped: number;
+  errors: Array<{ index: number; error: string }>;
 }
 
 export interface StockSummary {

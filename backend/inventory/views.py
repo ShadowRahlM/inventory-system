@@ -1,11 +1,5 @@
-import io
-import json as _json
-import tempfile
-from pathlib import Path
-
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.core.files.base import ContentFile
 
 from django.db import transaction
 from django.db.models import Count, Q, Sum
@@ -18,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from .models import Tile, Batch, Inventory, Movement, AuditLog, TileCatalog, Customer, Supplier, SalesOrder, PurchaseOrder, OrderLineItem, OrderStatus, Notification, SyncConflict
 from .serializers import (
-    TileSerializer, BatchSerializer, InventorySerializer, MovementSerializer, AuditLogSerializer, TileCatalogSerializer,
+    TileSerializer, BatchSerializer, InventorySerializer, MovementSerializer, AuditLogSerializer, TileCatalogSerializer, ProcessCatalogSerializer,
     ReceiveInventorySerializer, DispatchInventorySerializer, AdjustInventorySerializer, TransferInventorySerializer,
     UserSerializer, SetRoleSerializer,
     CustomerSerializer, SupplierSerializer, SalesOrderSerializer, PurchaseOrderSerializer, OrderLineItemSerializer,
@@ -29,6 +23,33 @@ from .services import InventoryService, OrderService
 from .permissions import IsInventoryViewer, CanPerformInventoryOperations, IsAdminUser
 
 
+def _extract_catalog_items(json_data):
+    """Extract a flat list of tile item dicts from various catalog JSON formats.
+
+    Supported formats:
+    - Flat array: [{"sku": "...", "name": "...", ...}, ...]
+    - image_to_sku_mappings: {"image_to_sku_mappings": [{"items": [{"sku_code": "...", "size": "...", ...}]}]}
+    """
+    if isinstance(json_data, list):
+        return json_data
+    if not isinstance(json_data, dict):
+        return []
+    mappings = json_data.get('image_to_sku_mappings')
+    if isinstance(mappings, list):
+        items = []
+        for mapping in mappings:
+            for entry in mapping.get('items', []):
+                items.append({
+                    'sku': entry.get('sku_code', ''),
+                    'name': entry.get('sku_code', ''),
+                    'dimensions': entry.get('size', '30x30cm'),
+                    'category': entry.get('category', 'Wall'),
+                    'pieces_per_carton': entry.get('pieces_per_carton', 10),
+                })
+        return items
+    return []
+
+
 class TileViewSet(viewsets.ModelViewSet):
     queryset = Tile.objects.all()
     serializer_class = TileSerializer
@@ -37,6 +58,33 @@ class TileViewSet(viewsets.ModelViewSet):
     search_fields = ['sku', 'name', 'description', 'category', 'brand', 'series', 'tile_type', 'finish', 'use_case']
     ordering_fields = ['sku', 'name', 'created_at']
     ordering = ['sku']
+
+    @action(detail=False, methods=['get'])
+    def check_sku(self, request):
+        sku = request.query_params.get('sku', '')
+        if not sku or len(sku) < 2:
+            return Response({'exists': False, 'tile': None})
+        try:
+            tile = Tile.objects.get(sku__iexact=sku)
+            return Response({'exists': True, 'tile': TileSerializer(tile).data})
+        except Tile.DoesNotExist:
+            return Response({'exists': False, 'tile': None})
+
+    @action(detail=False, methods=['post'])
+    def check_skus(self, request):
+        skus = request.data.get('skus', [])
+        if not isinstance(skus, list):
+            return Response({'error': 'Expected a list of SKUs'}, status=400)
+        existing = {}
+        for sku in skus:
+            if not isinstance(sku, str) or not sku.strip():
+                continue
+            try:
+                tile = Tile.objects.get(sku__iexact=sku.strip())
+                existing[sku] = TileSerializer(tile).data
+            except Tile.DoesNotExist:
+                pass
+        return Response({'existing': existing})
 
     @action(detail=False, methods=['post'])
     def batch_delete(self, request):
@@ -189,152 +237,64 @@ class TileCatalogViewSet(viewsets.ModelViewSet):
         return Response({'success': True, 'data': {'deleted': deleted[0]}})
 
     @action(detail=True, methods=['post'])
-    def extract(self, request, pk=None):
+    def process(self, request, pk=None):
         catalog = self.get_object()
-        pdf_path = catalog.file.path
-        dpi = int(request.query_params.get('dpi', 300))
-
-        # Auto-calculate min_cell_area from page dimensions
-        import fitz
-        doc = fitz.open(str(pdf_path))
-        page = doc[0]
-        zoom = dpi / 72
-        pw = int(page.rect.width * zoom)
-        ph = int(page.rect.height * zoom)
-        doc.close()
-
-        # Default: assume max 6 columns × 10 rows per page
-        min_cell_area = int(request.query_params.get('min_cell_area', (pw * ph) // 60))
-        max_cell_area = int(request.query_params.get('max_cell_area', (pw * ph) // 2))
-
-        from scripts.extract_catalog import process_pdf, build_reference
-        from django.conf import settings
-
-        # Build reference data from existing tiles
-        from .serializers import TileSerializer
-        existing_tiles = TileSerializer(Tile.objects.all(), many=True).data
-        reference = build_reference(existing_tiles)
-
-        # Save images to MEDIA_ROOT/extractions/{catalog.id}/
-        images_root = Path(settings.MEDIA_ROOT) / 'extractions' / str(catalog.id)
-        images_url = f'{settings.MEDIA_URL}extractions/{catalog.id}'
-
-        try:
-            result = process_pdf(
-                pdf_path,
-                dpi=dpi,
-                min_cell_area=min_cell_area,
-                max_cell_area=max_cell_area,
-                images_output_dir=str(images_root),
-                reference=reference,
-            )
-        except Exception as e:
+        if catalog.processed:
             return Response(
-                {'success': False, 'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                {'success': False, 'error': 'Catalog already processed'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Build image URLs for each product
-        for prod in result.products:
-            if prod.image_filename:
-                prod.image_url = f'{images_url}/{prod.image_filename}'
+        json_data = catalog.json_data
+        items = _extract_catalog_items(json_data)
+        if not items:
+            return Response(
+                {'success': False, 'error': 'No tile items found in catalog JSON'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        # Save products to DB
         created = 0
-        skipped_no_sku = 0
-        skipped_duplicate = 0
-        skipped_error = 0
-        products_data = []
-        debug_samples = []
-        for prod in result.products[:50]:
-            debug_samples.append({
-                'sku': prod.sku,
-                'name': prod.name,
-                'page': prod.page_number,
-                'image_filename': prod.image_filename,
-                'ocr_snippet': prod.description[:120] if prod.description else '',
-                'brand': prod.brand,
-                'series': prod.series,
-                'tier': prod.tier,
-                'tile_type': prod.tile_type,
-                'finish': prod.finish,
-                'thickness': prod.thickness,
-                'coverage_per_box': prod.coverage_per_box,
-                'use_case': prod.use_case,
-            })
-        for prod in result.products:
-            if not prod.sku:
-                skipped_no_sku += 1
+        errors = []
+
+        for i, item in enumerate(items):
+            sku = item.get('sku', '').strip()
+            if not sku:
+                errors.append({'index': i, 'error': 'Missing sku'})
                 continue
             try:
-                tile, was_created = Tile.objects.get_or_create(
-                    sku=prod.sku,
+                _, was_created = Tile.objects.get_or_create(
+                    sku=sku,
                     defaults={
-                        'name': prod.name or prod.sku,
-                        'dimensions': prod.dimensions or '30x30cm',
-                        'pieces_per_carton': prod.pieces_per_carton or 10,
-                        'category': prod.category or 'Wall',
-                        'description': prod.description or prod.name or '',
-                        'brand': prod.brand or 'other',
-                        'series': prod.series or '',
-                        'tier': prod.tier or 'standard',
-                        'tile_type': prod.tile_type or '',
-                        'finish': prod.finish or '',
-                        'thickness': prod.thickness or '',
-                        'coverage_per_box': prod.coverage_per_box or '',
-                        'use_case': prod.use_case or '',
+                        'name': item.get('name', sku),
+                        'dimensions': item.get('dimensions', '30x30cm'),
+                        'pieces_per_carton': item.get('pieces_per_carton', 10),
+                        'category': item.get('category', 'Wall'),
+                        'description': item.get('description', ''),
+                        'brand': item.get('brand', 'other'),
+                        'series': item.get('series', ''),
+                        'tier': item.get('tier', 'standard'),
+                        'tile_type': item.get('tile_type', ''),
+                        'finish': item.get('finish', ''),
+                        'thickness': item.get('thickness', ''),
+                        'coverage_per_box': item.get('coverage_per_box', ''),
+                        'use_case': item.get('use_case', ''),
                     },
                 )
                 if was_created:
                     created += 1
-                else:
-                    skipped_duplicate += 1
+            except Exception as e:
+                errors.append({'index': i, 'error': str(e)})
 
-                # Save extracted image to tile record if available
-                if prod.image_filename and not tile.image:
-                    img_path = images_root / prod.image_filename
-                    if img_path.exists():
-                        with open(img_path, 'rb') as f:
-                            tile.image.save(prod.image_filename, ContentFile(f.read()), save=True)
-
-                products_data.append(TileSerializer(tile).data)
-            except Exception:
-                skipped_error += 1
-
-        # Save extraction report
-        report = {
-            'catalog_id': str(catalog.id),
-            'catalog_name': catalog.name,
-            'total_pages': result.total_pages,
-            'processed_pages': result.processed_pages,
-            'cells_per_page': result.cells_per_page,
-            'page_errors': result.page_errors,
-            'products_found': len(result.products),
-            'products_created': created,
-            'products_skipped': skipped_no_sku + skipped_duplicate + skipped_error,
-            'breakdown': {
-                'no_sku_detected': skipped_no_sku,
-                'already_in_db': skipped_duplicate,
-                'error': skipped_error,
-            },
-            'debug_first_50_sku': debug_samples,
-            'params': {
-                'dpi': dpi,
-                'page_width_px': pw,
-                'page_height_px': ph,
-                'min_cell_area': min_cell_area,
-                'max_cell_area': max_cell_area,
-            },
-        }
-        report_dir = images_root.parent
-        report_dir.mkdir(parents=True, exist_ok=True)
-        (report_dir / f'{catalog.id}_report.json').write_text(
-            _json.dumps(report, indent=2, default=str)
-        )
+        catalog.processed = True
+        catalog.save(update_fields=['processed'])
 
         return Response({
             'success': True,
-            'data': report | {'products': products_data},
+            'data': {
+                'created': created,
+                'skipped': len(items) - created - len(errors),
+                'errors': errors,
+            },
         })
 
 

@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '../api/inventoryApi';
 import { INVENTORY_KEYS } from '../hooks/useInventoryQueries';
@@ -9,11 +10,20 @@ export function TileList() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
+  const [searchParams] = useSearchParams();
   const [editingTile, setEditingTile] = useState<TileProduct | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteId, setBulkDeleteId] = useState<Set<string> | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const editId = searchParams.get('edit');
+
+  useEffect(() => {
+    if (editId) {
+      inventoryApi.tiles.get(editId).then((tile) => setEditingTile(tile));
+    }
+  }, [editId]);
 
   const { data: tiles, isLoading, error } = useQuery({
     queryKey: INVENTORY_KEYS.tiles(),

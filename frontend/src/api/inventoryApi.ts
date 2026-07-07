@@ -18,7 +18,7 @@ import type {
   AdjustResult,
   TransferPayload,
   TransferResult,
-  CatalogExtractResult,
+  CatalogProcessResult,
   StockSummary,
   MovementSummary,
   Customer,
@@ -52,6 +52,8 @@ export const inventoryApi = {
       api.delete(`/inventory/tiles/${id}/`).then(r => r.data),
     batchDelete: (ids: string[]) =>
       api.post<ApiResponse<{ deleted: number }>>('/inventory/tiles/batch_delete/', { ids }).then(extractData),
+    checkSkus: (skus: string[]) =>
+      api.post<{ existing: Record<string, TileProduct> }>('/inventory/tiles/check_skus/', { skus }).then(r => r.data),
   },
 
   batches: {
@@ -93,16 +95,14 @@ export const inventoryApi = {
       api.get<PaginatedResponse<TileCatalog>>('/inventory/catalogs/').then(r => r.data),
     get: (id: string) =>
       api.get<TileCatalog>(`/inventory/catalogs/${id}/`).then(r => r.data),
-    create: (data: FormData) =>
-      api.post<TileCatalog>('/inventory/catalogs/', data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }).then(r => r.data),
+    create: (data: { name: string; description?: string; json_data: Record<string, unknown> }) =>
+      api.post<TileCatalog>('/inventory/catalogs/', data).then(r => r.data),
     delete: (id: string) =>
       api.delete(`/inventory/catalogs/${id}/`).then(r => r.data),
     batchDelete: (ids: string[]) =>
       api.post<ApiResponse<{ deleted: number }>>('/inventory/catalogs/batch_delete/', { ids }).then(extractData),
-    extract: (id: string) =>
-      api.post<ApiResponse<CatalogExtractResult>>(`/inventory/catalogs/${id}/extract/`).then(extractData),
+    process: (id: string) =>
+      api.post<ApiResponse<CatalogProcessResult>>(`/inventory/catalogs/${id}/process/`).then(extractData),
   },
 
   users: {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/query-client';
 import { useAuthStore, useUIStore } from './lib/store';
@@ -17,9 +17,12 @@ import { OrdersPage } from './components/OrdersPage';
 import { CustomerSupplierPage } from './components/CustomerSupplierPage';
 import { NotificationsPage } from './components/NotificationsPage';
 import { SyncConflictsPage } from './components/SyncConflictsPage';
+import { Register } from './components/Register';
+import { useSessionTimeout, initSession, getRedirectPath, clearRedirectPath } from './lib/useSessionTimeout';
 
 function Login() {
   const { setAuth } = useAuthStore();
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -32,12 +35,16 @@ function Login() {
       const { access, refresh } = response.data;
       localStorage.setItem('access_token', access);
       localStorage.setItem('refresh_token', refresh);
+      initSession();
       try {
         const userInfo = await authAPI.me();
         setAuth(true, userInfo);
       } catch {
         setAuth(true, { username, role: 'viewer' });
       }
+      const redirect = getRedirectPath()
+      clearRedirectPath()
+      navigate(redirect || '/', { replace: true })
     } catch {
       setError('Invalid username or password');
     }
@@ -77,6 +84,12 @@ function Login() {
         >
           Login
         </button>
+        <p className="mt-4 text-center text-sm text-gray-600">
+          Don't have an account?{' '}
+          <Link to="/register" className="text-blue-600 underline hover:text-blue-800">
+            Create one
+          </Link>
+        </p>
       </form>
     </div>
   );
@@ -90,12 +103,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function App() {
   const { sidebarOpen } = useUIStore();
   const { isAuthenticated } = useAuthStore();
+  useSessionTimeout();
 
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         {!isAuthenticated ? (
-          <Login />
+          <Routes>
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="*" element={<Login />} />
+          </Routes>
         ) : (
           <div className="flex">
             <Sidebar />

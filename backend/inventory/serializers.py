@@ -39,6 +39,25 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
+class RegisterSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True, min_length=4)
+
+    def validate_username(self, value):
+        User = get_user_model()
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError('A user with that username already exists.')
+        return value
+
+    def create(self, validated_data):
+        User = get_user_model()
+        user = User(username=validated_data['username'])
+        user.set_password(validated_data['password'])
+        user.is_active = True
+        user.save()
+        return user
+
+
 class SetRoleSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=['admin', 'manager', 'viewer'])
 
@@ -98,7 +117,14 @@ class TileCatalogSerializer(serializers.ModelSerializer):
     class Meta:
         model = TileCatalog
         fields = '__all__'
-        read_only_fields = ['uploaded_by']
+        read_only_fields = ['uploaded_by', 'processed']
+
+
+class ProcessCatalogSerializer(serializers.Serializer):
+    data = serializers.ListField(
+        child=serializers.DictField(),
+        allow_empty=False,
+    )
 
 
 class ReceiveInventorySerializer(serializers.Serializer):

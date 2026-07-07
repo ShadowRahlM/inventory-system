@@ -169,7 +169,8 @@ class TileCatalog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    file = models.FileField(upload_to='catalogs/')
+    json_data = models.JSONField(blank=True, default=dict)
+    processed = models.BooleanField(default=False)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True)
 

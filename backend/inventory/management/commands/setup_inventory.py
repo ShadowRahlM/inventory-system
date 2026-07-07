@@ -45,6 +45,7 @@ class Command(BaseCommand):
                 defaults={
                     'is_superuser': cfg['is_superuser'],
                     'is_staff': cfg['is_staff'],
+                    'is_active': True,
                 },
             )
             if created:
@@ -54,19 +55,12 @@ class Command(BaseCommand):
                 user.is_active = True
                 user.save()
                 user.groups.set(cfg['groups'])
-                status = "Created"
-            else:
-                # Only fix password if it's broken (e.g. after DB restore)
-                if not user.check_password(cfg['password']):
-                    user.set_password(cfg['password'])
-                    user.is_active = True
-                    user.save()
-                    user.groups.set(cfg['groups'])
-                    status = "Fixed password"
-                else:
-                    status = "Skipped (unchanged)"
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"{status} user '{cfg['username']}' (password: {cfg['password']})"
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"Created user '{cfg['username']}' (password: {cfg['password']})"
+                    )
                 )
-            )
+            else:
+                self.stdout.write(
+                    f"Skipped user '{cfg['username']}' (already exists, credentials unchanged)"
+                )

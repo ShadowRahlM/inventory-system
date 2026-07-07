@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { INVENTORY_KEYS } from '../hooks/useInventoryQueries';
 import type { TileProduct } from '../types/inventory';
@@ -26,6 +26,23 @@ const USE_CASES = ['Living rooms', 'Bedrooms', 'Kitchen', 'Bathroom', 'Outdoor',
 export function NewTile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [sku, setSku] = useState('');
+  const [debouncedSku, setDebouncedSku] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSku(sku), 800);
+    return () => clearTimeout(timer);
+  }, [sku]);
+
+  const { data: skuCheck } = useQuery({
+    queryKey: [...INVENTORY_KEYS.all, 'sku-check', debouncedSku],
+    queryFn: () =>
+      api.get<{ exists: boolean; tile: TileProduct | null }>(
+        '/inventory/tiles/check_sku/', { params: { sku: debouncedSku } }
+      ).then(r => r.data),
+    enabled: debouncedSku.length >= 4,
+  });
 
   const [form, setForm] = useState({
     sku: '',
@@ -99,7 +116,16 @@ export function NewTile() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">SKU *</label>
-            <input type="text" value={form.sku} required onChange={(e) => update({ sku: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. GW-COS-3006" />
+            <input type="text" value={sku} required onChange={(e) => { setSku(e.target.value); update({ sku: e.target.value }); }} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. GW-COS-3006" />
+            {skuCheck?.exists && sku === debouncedSku && (
+              <div className="mt-2 flex items-center gap-2 bg-yellow-50 border border-yellow-300 text-yellow-800 px-3 py-2 rounded text-sm">
+                <span>⚠️</span>
+                <span>
+                  Tile "<strong>{skuCheck.tile!.name}</strong>" already exists —{' '}
+                  <Link to={`/tiles?edit=${skuCheck.tile!.id}`} className="text-blue-600 underline hover:text-blue-800">View Tile</Link>
+                </span>
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Name *</label>

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { clearSession } from './useSessionTimeout';
 
 export interface UserInfo {
   username: string;
@@ -19,6 +20,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    clearSession();
     set({ isAuthenticated: false, user: null });
   },
 }));

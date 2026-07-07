@@ -38,8 +38,8 @@ class AuditLogAdmin(admin.ModelAdmin):
 
 @admin.register(TileCatalog)
 class TileCatalogAdmin(admin.ModelAdmin):
-    list_display = ['name', 'uploaded_at', 'uploaded_by']
-    list_filter = ['uploaded_at']
+    list_display = ['name', 'processed', 'uploaded_at', 'uploaded_by']
+    list_filter = ['processed', 'uploaded_at']
 
 
 @admin.register(Customer)

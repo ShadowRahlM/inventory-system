@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { render } from '../../test/utils'
 import { Catalogs } from '../Catalogs'
@@ -9,26 +9,14 @@ const { inventoryApi } = vi.hoisted(() => {
   const catalogs = {
     count: 2,
     results: [
-      { id: 'c1', name: 'Catalog A', description: 'Test catalog', file: '/media/cats/a.pdf', uploaded_at: '2025-01-15T10:00:00Z', uploaded_by_username: 'manager' },
-      { id: 'c2', name: 'Catalog B', description: '', file: '/media/cats/b.pdf', uploaded_at: '2025-01-20T10:00:00Z', uploaded_by_username: null },
+      { id: 'c1', name: 'Catalog A', description: 'Test catalog', json_data: {}, processed: false, uploaded_at: '2025-01-15T10:00:00Z', uploaded_by_username: 'manager' },
+      { id: 'c2', name: 'Catalog B', description: '', json_data: {}, processed: true, uploaded_at: '2025-01-20T10:00:00Z', uploaded_by_username: null },
     ],
   }
-  const extResult = {
-    products_found: 15,
-    products_created: 10,
-    products_skipped: 5,
-    total_pages: 3,
-    processed_pages: 3,
-    cells_per_page: [6, 5, 4],
-    page_errors: [] as string[],
-    breakdown: { no_sku_detected: 3, already_in_db: 2, error: 0 },
-    debug_first_50_sku: [
-      { page: 1, name: 'Tile 1', sku: 'TILE-001', brand: 'goodwill', series: 'Cosmos', tier: 'standard', tile_type: 'Glazed', finish: 'Matte', thickness: '8mm', coverage_per_box: '1.44m²', use_case: 'Floor', image_filename: 'TILE-001.png', ocr_snippet: 'Tile 1 description' },
-    ],
-    products: [
-      { id: 'p1', sku: 'TILE-001', image: null },
-      { id: 'p2', sku: 'TILE-002', image: '/media/tiles/tile-002.png' },
-    ],
+  const processResult = {
+    created: 5,
+    skipped: 2,
+    errors: [],
   }
   return {
     inventoryApi: {
@@ -37,7 +25,7 @@ const { inventoryApi } = vi.hoisted(() => {
         create: vi.fn(() => Promise.resolve({ id: 'c3', name: 'New Cat' })),
         delete: vi.fn(() => Promise.resolve({})),
         batchDelete: vi.fn(() => Promise.resolve({ deleted: 2 })),
-        extract: vi.fn(() => Promise.resolve(extResult)),
+        process: vi.fn(() => Promise.resolve(processResult)),
       },
     },
   }
@@ -56,11 +44,11 @@ describe('Catalogs', () => {
     expect(screen.getByText('Tile Catalogs')).toBeInTheDocument()
   })
 
-  it('renders upload form', () => {
+  it('renders JSON input form', () => {
     render(<Catalogs />)
-    expect(screen.getByText('Upload Catalog PDF')).toBeInTheDocument()
+    expect(screen.getByText('New Catalog (JSON)')).toBeInTheDocument()
     expect(screen.getByText('Name')).toBeInTheDocument()
-    expect(screen.getByText('PDF File')).toBeInTheDocument()
+    expect(screen.getByText('JSON Data')).toBeInTheDocument()
   })
 
   it('renders catalog list', async () => {
@@ -74,12 +62,43 @@ describe('Catalogs', () => {
     expect(await screen.findByText(/manager/)).toBeInTheDocument()
   })
 
-  it('renders action buttons for each catalog', async () => {
+  it('shows processed status', async () => {
+    render(<Catalogs />)
+    expect(await screen.findByText('Processed')).toBeInTheDocument()
+  })
+
+  it('renders action buttons per catalog', async () => {
     render(<Catalogs />)
     await screen.findByText('Catalog A')
-    expect(screen.getAllByText('View PDF').length).toBe(2)
-    expect(screen.getAllByText('Extract').length).toBe(2)
     expect(screen.getAllByText('Delete').length).toBe(2)
+    expect(screen.getAllByText('Process').length).toBe(1)
+  })
+
+  it('does not show process button for already processed catalog', async () => {
+    render(<Catalogs />)
+    await screen.findByText('Catalog B')
+    const processBtns = screen.queryAllByText('Process')
+    expect(processBtns.length).toBe(1)
+  })
+
+  it('creates catalog via JSON input', async () => {
+    const user = userEvent.setup()
+    render(<Catalogs />)
+    await screen.findByText('New Catalog (JSON)')
+
+    await user.type(screen.getByPlaceholderText('Catalog name'), 'Test JSON')
+    const textarea = screen.getByPlaceholderText(/TILE-001/)
+    await user.click(textarea)
+    await user.paste('[{"sku": "T-1"}]')
+    await user.click(screen.getByText('Save Catalog'))
+
+    await waitFor(() => {
+      expect(inventoryApi.catalogs.create).toHaveBeenCalledWith({
+        name: 'Test JSON',
+        description: '',
+        json_data: [{ sku: 'T-1' }],
+      })
+    })
   })
 
   it('shows delete confirmation modal', async () => {
@@ -112,26 +131,24 @@ describe('Catalogs', () => {
     expect(checkboxes.length).toBeGreaterThanOrEqual(2)
   })
 
-  it('shows extract result after extraction', async () => {
+  it('shows process result after processing', async () => {
     const user = userEvent.setup()
     render(<Catalogs />)
     await screen.findByText('Catalog A')
-    const extractBtns = screen.getAllByText('Extract')
-    await user.click(extractBtns[0])
+    const processBtns = screen.getAllByText('Process')
+    await user.click(processBtns[0])
     await waitFor(() => {
-      expect(screen.getByText(/Found 15 products/)).toBeInTheDocument()
+      expect(screen.getByText(/Created 5 tiles/)).toBeInTheDocument()
     })
-    expect(screen.getByText(/Created 10 new tiles/)).toBeInTheDocument()
   })
 
-  it('shows image grid when products have images', async () => {
-    const user = userEvent.setup()
+  it('shows validation error for empty name', async () => {
     render(<Catalogs />)
-    await screen.findByText('Catalog A')
-    const extractBtns = screen.getAllByText('Extract')
-    await user.click(extractBtns[0])
-    await waitFor(() => {
-      expect(screen.getByText('TILE-002')).toBeInTheDocument()
-    })
+    await screen.findByText('Save Catalog')
+    const textarea = screen.getByPlaceholderText(/TILE-001/)
+    fireEvent.change(textarea, { target: { value: '[{"sku": "T-1"}]' } })
+    const form = screen.getByText('Save Catalog').closest('form')!
+    fireEvent.submit(form)
+    expect(screen.getByText('Name is required')).toBeInTheDocument()
   })
 })

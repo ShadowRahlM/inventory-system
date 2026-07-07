@@ -133,24 +133,21 @@ describe('inventoryApi stock', () => {
 })
 
 describe('inventoryApi catalogs', () => {
-  it('create sends FormData with multipart header', async () => {
+  it('create sends JSON payload', async () => {
     const { inventoryApi } = await import('../inventoryApi')
-    const formData = new FormData()
-    formData.append('name', 'Catalog 1')
+    const payload = { name: 'Catalog 1', description: '', json_data: { items: [] } }
     mockApi.post.mockResolvedValue({ data: { id: 'c1', name: 'Catalog 1' } })
-    await inventoryApi.catalogs.create(formData)
-    expect(mockApi.post).toHaveBeenCalledWith('/inventory/catalogs/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    await inventoryApi.catalogs.create(payload)
+    expect(mockApi.post).toHaveBeenCalledWith('/inventory/catalogs/', payload)
   })
 
-  it('extract returns typed result', async () => {
+  it('process returns typed result', async () => {
     const { inventoryApi } = await import('../inventoryApi')
-    const extractData = { products_found: 10, products_created: 5 }
-    mockApi.post.mockResolvedValue({ data: { success: true, data: extractData } })
-    const result = await inventoryApi.catalogs.extract('c1')
-    expect(mockApi.post).toHaveBeenCalledWith('/inventory/catalogs/c1/extract/')
-    expect(result.products_found).toBe(10)
+    const processData = { created: 5, skipped: 2, errors: [] }
+    mockApi.post.mockResolvedValue({ data: { success: true, data: processData } })
+    const result = await inventoryApi.catalogs.process('c1')
+    expect(mockApi.post).toHaveBeenCalledWith('/inventory/catalogs/c1/process/')
+    expect(result.created).toBe(5)
   })
 })
 

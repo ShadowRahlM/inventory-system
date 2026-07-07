@@ -341,6 +341,34 @@ class InventoryService:
         
         return source_inventory, dest_inventory, movement
 
+    @staticmethod
+    def get_available_stock(tile_id: uuid.UUID) -> dict:
+        tile = Tile.objects.get(id=tile_id)
+        inventories = Inventory.objects.filter(tile=tile, batch__is_active=True)
+
+        total_cartons = sum(inv.cartons for inv in inventories)
+        total_loose_pieces = sum(inv.loose_pieces for inv in inventories)
+        total_pieces = sum(inv.total_pieces for inv in inventories)
+
+        return {
+            'tile_id': str(tile_id),
+            'sku': tile.sku,
+            'name': tile.name,
+            'total_cartons': total_cartons,
+            'total_loose_pieces': total_loose_pieces,
+            'total_pieces': total_pieces,
+            'locations': [
+                {
+                    'location': inv.location,
+                    'batch': inv.batch.batch_number,
+                    'cartons': inv.cartons,
+                    'loose_pieces': inv.loose_pieces,
+                    'total_pieces': inv.total_pieces
+                }
+                for inv in inventories
+            ]
+        }
+
 class OrderService:
     @staticmethod
     @transaction.atomic
@@ -519,32 +547,3 @@ class OrderService:
         order.status = OrderStatus.DELIVERED
         order.save(update_fields=['status'])
         return order
-
-
-    @staticmethod
-    def get_available_stock(tile_id: uuid.UUID) -> dict:
-        tile = Tile.objects.get(id=tile_id)
-        inventories = Inventory.objects.filter(tile=tile, batch__is_active=True)
-        
-        total_cartons = sum(inv.cartons for inv in inventories)
-        total_loose_pieces = sum(inv.loose_pieces for inv in inventories)
-        total_pieces = sum(inv.total_pieces for inv in inventories)
-        
-        return {
-            'tile_id': str(tile_id),
-            'sku': tile.sku,
-            'name': tile.name,
-            'total_cartons': total_cartons,
-            'total_loose_pieces': total_loose_pieces,
-            'total_pieces': total_pieces,
-            'locations': [
-                {
-                    'location': inv.location,
-                    'batch': inv.batch.batch_number,
-                    'cartons': inv.cartons,
-                    'loose_pieces': inv.loose_pieces,
-                    'total_pieces': inv.total_pieces
-                }
-                for inv in inventories
-            ]
-        }

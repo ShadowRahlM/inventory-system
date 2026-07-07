@@ -19,11 +19,24 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+
+from inventory.serializers import RegisterSerializer
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def auth_register(request):
+    serializer = RegisterSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({'detail': 'Registration successful'}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
@@ -47,6 +60,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/token/", TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name='token_refresh'),
+    path("api/auth/register/", auth_register, name='auth_register'),
     path("api/auth/me/", auth_me, name='auth_me'),
     path("api/schema/", SpectacularAPIView.as_view(), name='schema'),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
