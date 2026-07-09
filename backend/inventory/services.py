@@ -494,13 +494,12 @@ class InventoryService:
                     )
                     stock_created += 1
                 else:
-                    inv.cartons = qty
-                    inv.loose_pieces = 0
-                    inv.save()
+                    inv.cartons += qty
+                    inv.save(update_fields=['cartons'])
                     stock_updated += 1
 
-                cartons_change = qty - prev_cartons
-                loose_change = -prev_loose
+                cartons_change = qty
+                loose_change = 0
                 if cartons_change != 0 or loose_change != 0:
                     movements.append(Movement(
                         tile=tile,

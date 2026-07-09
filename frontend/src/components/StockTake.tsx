@@ -362,7 +362,7 @@ export function StockTake() {
 
           {hasExistingStock && (
             <div className="mt-3 bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-2 rounded text-sm">
-              ⚠️ {warnings.filter(w => w.type === 'existing_stock').length} SKU(s) already have stock. Importing will <strong>overwrite</strong> their quantity.
+              ⚠️ {warnings.filter(w => w.type === 'existing_stock').length} SKU(s) already have stock. Importing will <strong>add</strong> cartons to existing quantity.
             </div>
           )}
 
