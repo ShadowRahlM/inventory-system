@@ -18,6 +18,7 @@ import { CustomerSupplierPage } from './components/CustomerSupplierPage';
 import { NotificationsPage } from './components/NotificationsPage';
 import { SyncConflictsPage } from './components/SyncConflictsPage';
 import { AdminExport } from './components/AdminExport';
+import { AdminImport } from './components/AdminImport';
 import { StockTake } from './components/StockTake';
 import { Register } from './components/Register';
 import { useSessionTimeout, initSession, getRedirectPath, clearRedirectPath } from './lib/useSessionTimeout';
@@ -212,6 +213,11 @@ function App() {
                 <Route path="/admin-export" element={
                   <ProtectedRoute adminOnly>
                     <AdminExport />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin-import" element={
+                  <ProtectedRoute adminOnly>
+                    <AdminImport />
                   </ProtectedRoute>
                 } />
               </Routes>

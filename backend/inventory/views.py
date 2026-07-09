@@ -900,6 +900,97 @@ class BarcodeViewSet(viewsets.ViewSet):
         return Response({'error': 'Unknown barcode format'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+IMPORT_ORDER = [
+    'Group', 'User',
+    'Tile', 'Batch', 'Customer', 'Supplier',
+    'Inventory', 'Movement', 'AuditLog',
+    'SalesOrder', 'PurchaseOrder', 'OrderLineItem',
+    'TileCatalog', 'Notification', 'SyncState', 'SyncConflict',
+]
+
+
+def _run_import(export: dict, dry_run: bool = False) -> dict:
+    from io import StringIO
+    from django.core.serializers import deserialize
+    from django.contrib.auth import get_user_model
+    from django.contrib.auth.models import Group, Permission
+
+    User = get_user_model()
+    counts = {}
+
+    for label in IMPORT_ORDER:
+        records = export.get('models', {}).get(label, [])
+        if not records:
+            counts[label] = {'created': 0, 'skipped': 0}
+            continue
+
+        created = 0
+        skipped = 0
+
+        if label == 'Group':
+            for g in records:
+                if dry_run:
+                    created += 1
+                    continue
+                group, was = Group.objects.get_or_create(
+                    name=g['name'],
+                    defaults={'id': g['id']},
+                )
+                perm_codenames = g.get('permissions', [])
+                if perm_codenames:
+                    perms = Permission.objects.filter(codename__in=perm_codenames)
+                    group.permissions.add(*perms)
+                if was:
+                    created += 1
+                else:
+                    skipped += 1
+
+        elif label == 'User':
+            for u in records:
+                if dry_run:
+                    created += 1
+                    continue
+                user, was = User.objects.get_or_create(
+                    username=u['username'],
+                    defaults={
+                        'email': u.get('email', ''),
+                        'is_superuser': u['is_superuser'],
+                        'is_staff': u['is_staff'],
+                        'is_active': u.get('is_active', True),
+                    },
+                )
+                if was:
+                    user.set_unusable_password()
+                    user.save(update_fields=['password'])
+                    created += 1
+                else:
+                    skipped += 1
+                group_names = u.get('groups', [])
+                if group_names:
+                    groups = Group.objects.filter(name__in=group_names)
+                    user.groups.add(*groups)
+
+        else:
+            model_name = f'inventory.{label}'
+            for obj in records:
+                if dry_run:
+                    created += 1
+                    continue
+                stream = StringIO(json.dumps([obj]))
+                for deserialized_obj in deserialize('json', stream):
+                    try:
+                        deserialized_obj.save()
+                        created += 1
+                    except Exception:
+                        skipped += 1
+
+        counts[label] = {'created': created, 'skipped': skipped}
+
+    total_created = sum(c['created'] for c in counts.values())
+    total_skipped = sum(c['skipped'] for c in counts.values())
+    return {'counts': counts, 'total_created': total_created, 'total_skipped': total_skipped}
+
+
 class AdminExportViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated, IsAdminUser]
 
@@ -912,7 +1003,6 @@ class AdminExportViewSet(viewsets.ViewSet):
         from django.contrib.auth import get_user_model
         from django.contrib.auth.models import Group
         from datetime import datetime, timezone
-        import json
 
         User = get_user_model()
         indent = 2
@@ -953,3 +1043,21 @@ class AdminExportViewSet(viewsets.ViewSet):
         response = HttpResponse(buffer, content_type='application/json')
         response['Content-Disposition'] = 'attachment; filename="inventory_export.json"'
         return response
+
+    @action(detail=False, methods=['post'])
+    def import_data(self, request):
+        preview = request.data.get('preview', True)
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            export = json.loads(file.read().decode('utf-8'))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            return Response({'error': f'Invalid JSON: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        result = _run_import(export, dry_run=preview)
+        result['version'] = export.get('version', '?')
+        result['exported_at'] = export.get('exported_at', '?')
+        result['preview'] = preview
+        return Response(result)

@@ -114,6 +114,15 @@ export function Sidebar() {
               <span className="text-xl">📤</span>
               {sidebarOpen && <span className="ml-3">Data Export</span>}
             </Link>
+            <Link
+              to="/admin-import"
+              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
+                location.pathname === '/admin-import' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              }`}
+            >
+              <span className="text-xl">📥</span>
+              {sidebarOpen && <span className="ml-3">Data Import</span>}
+            </Link>
           </>
         )}
       </nav>
