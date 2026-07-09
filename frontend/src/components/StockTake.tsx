@@ -21,16 +21,19 @@ function normalizeQuotes(s: string): string {
   return s.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"').replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
 }
 
+function fixupJson(s: string): string {
+  return s.replace(/(:\s*)(\d+)"(\s*[}\]])/g, '$1$2$3');
+}
+
 function parseAndPreview(raw: string): { entries: PreviewEntry[]; error?: string } {
-  const stripped = normalizeQuotes(raw).replace(/^\uFEFF/, '').trim();
+  const stripped = fixupJson(normalizeQuotes(raw)).replace(/^\uFEFF/, '').trim();
   if (!stripped) return { entries: [], error: 'No JSON data' };
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(stripped);
   } catch (e) {
-    const preview = stripped.length > 200 ? stripped.slice(0, 200) + '...' : stripped;
-    return { entries: [], error: `Invalid JSON: ${(e as Error).message}\n\nFirst chars: ${JSON.stringify(preview)}` };
+    return { entries: [], error: `Invalid JSON: ${(e as Error).message}` };
   }
 
   if (typeof parsed !== 'object' || parsed === null) {
@@ -234,7 +237,7 @@ export function StockTake() {
   });
 
   const handleImport = useCallback(() => {
-    const parsed = JSON.parse(normalizeQuotes(rawJson).replace(/^\uFEFF/, '').trim());
+    const parsed = JSON.parse(fixupJson(normalizeQuotes(rawJson)).replace(/^\uFEFF/, '').trim());
     mutation.mutate(parsed);
   }, [rawJson, mutation]);
 
