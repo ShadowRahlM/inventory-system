@@ -346,7 +346,7 @@ export function StockTake() {
                         {entry.quantity}
                       </td>
                       <td className="px-3 py-2 border text-center font-mono text-xs text-gray-600">
-                        {entry.pcsPerBox ?? '?'}
+                        {entry.pcsPerBox ?? existInfo?.pieces_per_carton ?? '?'}
                       </td>
                       <td className="px-3 py-2 border text-center">{statusBadge}</td>
                       <td className="px-3 py-2 border text-center">
