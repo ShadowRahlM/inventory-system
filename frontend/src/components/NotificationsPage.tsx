@@ -1,4 +1,4 @@
-import { useNotificationsList, useMarkNotificationsRead, useMarkAllNotificationsRead } from '../hooks/useInventoryQueries';
+import { useNotificationsList, useMarkNotificationsRead, useMarkAllNotificationsRead, useClearReadNotifications } from '../hooks/useInventoryQueries';
 import type { NotificationRecord } from '../types/inventory';
 
 const typeIcons: Record<string, string> = {
@@ -37,8 +37,10 @@ function NotificationRow({ notification }: { notification: NotificationRecord })
 export function NotificationsPage() {
   const { data, isLoading } = useNotificationsList();
   const { mutate: markAllRead } = useMarkAllNotificationsRead();
+  const { mutate: clearRead, isPending: isClearing } = useClearReadNotifications();
   const notifications = data?.results ?? [];
   const unreadCount = notifications.filter(n => !n.is_read).length;
+  const readCount = notifications.length - unreadCount;
 
   if (isLoading) return <div className="p-6 text-gray-500">Loading notifications...</div>;
 
@@ -46,14 +48,25 @@ export function NotificationsPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Notifications</h1>
-        {unreadCount > 0 && (
-          <button
-            onClick={() => markAllRead()}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Mark all as read ({unreadCount})
-          </button>
-        )}
+        <div className="flex gap-2">
+          {unreadCount > 0 && (
+            <button
+              onClick={() => markAllRead()}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Mark all as read ({unreadCount})
+            </button>
+          )}
+          {readCount > 0 && (
+            <button
+              onClick={() => { if (window.confirm(`Delete ${readCount} read notification${readCount === 1 ? '' : 's'}?`)) clearRead(); }}
+              disabled={isClearing}
+              className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+            >
+              {isClearing ? 'Clearing...' : `Clear read (${readCount})`}
+            </button>
+          )}
+        </div>
       </div>
       <div className="bg-white rounded-lg shadow border">
         {notifications.length === 0 ? (

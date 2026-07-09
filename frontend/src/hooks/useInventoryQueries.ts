@@ -253,6 +253,16 @@ export function useMarkAllNotificationsRead() {
   });
 }
 
+export function useClearReadNotifications() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => inventoryApi.notifications.clearRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.notifications() });
+    },
+  });
+}
+
 export function useSyncConflictsList() {
   return useQuery({
     queryKey: [...INVENTORY_KEYS.syncConflicts(), { page_size: 5000 }],

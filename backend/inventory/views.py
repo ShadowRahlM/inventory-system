@@ -813,6 +813,12 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         count = qs.update(is_read=True)
         return Response({'success': True, 'marked_read': count})
 
+    @action(detail=False, methods=['post'])
+    def clear_read(self, request):
+        qs = self.get_queryset().filter(is_read=True)
+        count, _ = qs.delete()
+        return Response({'success': True, 'deleted': count})
+
 
 class SyncConflictViewSet(viewsets.ModelViewSet):
     queryset = SyncConflict.objects.all()

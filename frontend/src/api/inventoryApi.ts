@@ -205,6 +205,8 @@ export const inventoryApi = {
       api.post<ApiResponse<null>>('/inventory/notifications/mark_read/', { ids }).then(r => r.data),
     markAllRead: () =>
       api.post<ApiResponse<{ marked_read: number }>>('/inventory/notifications/mark_all_read/').then(r => r.data),
+    clearRead: () =>
+      api.post<ApiResponse<{ deleted: number }>>('/inventory/notifications/clear_read/').then(r => r.data),
   },
 
   syncConflicts: {
