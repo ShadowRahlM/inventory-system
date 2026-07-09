@@ -28,8 +28,9 @@ function parseAndPreview(raw: string): { entries: PreviewEntry[]; error?: string
   let parsed: unknown;
   try {
     parsed = JSON.parse(stripped);
-  } catch {
-    return { entries: [], error: 'Invalid JSON' };
+  } catch (e) {
+    const preview = stripped.length > 200 ? stripped.slice(0, 200) + '...' : stripped;
+    return { entries: [], error: `Invalid JSON: ${(e as Error).message}\n\nFirst chars: ${JSON.stringify(preview)}` };
   }
 
   if (typeof parsed !== 'object' || parsed === null) {
