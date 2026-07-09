@@ -21,6 +21,7 @@ import { AdminExport } from './components/AdminExport';
 import { StockTake } from './components/StockTake';
 import { Register } from './components/Register';
 import { useSessionTimeout, initSession, getRedirectPath, clearRedirectPath } from './lib/useSessionTimeout';
+import { useWebSocket } from './hooks/useWebSocket';
 
 function Login() {
   const { setAuth } = useAuthStore();
@@ -109,6 +110,7 @@ function App() {
   const { sidebarOpen } = useUIStore();
   const { isAuthenticated } = useAuthStore();
   useSessionTimeout();
+  useWebSocket();
 
   return (
     <QueryClientProvider client={queryClient}>

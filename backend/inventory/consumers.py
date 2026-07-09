@@ -4,10 +4,26 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 class InventoryConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        if self.scope["user"].is_anonymous:
+        token = None
+        qs = self.scope.get('query_string', b'').decode()
+        for part in qs.split('&'):
+            if part.startswith('token='):
+                token = part.split('=', 1)[1]
+                break
+
+        if token:
+            try:
+                from rest_framework_simplejwt.tokens import AccessToken
+                from django.contrib.auth import get_user_model
+                access = AccessToken(token)
+                self.scope['user'] = await get_user_model().objects.aget(id=access['user_id'])
+            except Exception:
+                await self.close()
+                return
+        elif self.scope["user"].is_anonymous:
             await self.close()
             return
-        
+
         await self.channel_layer.group_add("inventory_updates", self.channel_name)
         await self.accept()
 
