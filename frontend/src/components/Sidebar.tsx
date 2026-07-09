@@ -45,7 +45,7 @@ export function Sidebar() {
           </button>
         </div>
       </div>
-      <nav className="mt-4 flex-1">
+      <nav className="mt-4 flex-1 overflow-y-auto">
         {navigation.map((item) => (
           <Link
             key={item.name}
