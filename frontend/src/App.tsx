@@ -17,6 +17,7 @@ import { OrdersPage } from './components/OrdersPage';
 import { CustomerSupplierPage } from './components/CustomerSupplierPage';
 import { NotificationsPage } from './components/NotificationsPage';
 import { SyncConflictsPage } from './components/SyncConflictsPage';
+import { AdminExport } from './components/AdminExport';
 import { StockTake } from './components/StockTake';
 import { Register } from './components/Register';
 import { useSessionTimeout, initSession, getRedirectPath, clearRedirectPath } from './lib/useSessionTimeout';
@@ -201,6 +202,11 @@ function App() {
                 <Route path="/sync-conflicts" element={
                   <ProtectedRoute>
                     <SyncConflictsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin-export" element={
+                  <ProtectedRoute>
+                    <AdminExport />
                   </ProtectedRoute>
                 } />
               </Routes>

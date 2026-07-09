@@ -62,24 +62,35 @@ export function Sidebar() {
           </Link>
         ))}
         {isAdmin && (
-          <Link
-            to="/sync-conflicts"
-            className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
-              location.pathname === '/sync-conflicts' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
-            }`}
-          >
-            <span className="text-xl">🔀</span>
-            {sidebarOpen && (
-              <span className="ml-3 flex items-center gap-2">
-                Sync Conflicts
-                {unresolvedConflicts > 0 && (
-                  <span className="bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 min-w-5 text-center">
-                    {unresolvedConflicts > 9 ? '9+' : unresolvedConflicts}
-                  </span>
-                )}
-              </span>
-            )}
-          </Link>
+          <>
+            <Link
+              to="/sync-conflicts"
+              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
+                location.pathname === '/sync-conflicts' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              }`}
+            >
+              <span className="text-xl">🔀</span>
+              {sidebarOpen && (
+                <span className="ml-3 flex items-center gap-2">
+                  Sync Conflicts
+                  {unresolvedConflicts > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 min-w-5 text-center">
+                      {unresolvedConflicts > 9 ? '9+' : unresolvedConflicts}
+                    </span>
+                  )}
+                </span>
+              )}
+            </Link>
+            <Link
+              to="/admin-export"
+              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
+                location.pathname === '/admin-export' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              }`}
+            >
+              <span className="text-xl">📤</span>
+              {sidebarOpen && <span className="ml-3">Data Export</span>}
+            </Link>
+          </>
         )}
       </nav>
       <div className={`border-t border-gray-700 ${sidebarOpen ? 'p-4' : 'p-2 flex justify-center'}`}>
