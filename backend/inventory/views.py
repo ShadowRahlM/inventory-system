@@ -892,3 +892,58 @@ class BarcodeViewSet(viewsets.ViewSet):
                 except Batch.DoesNotExist:
                     return Response({'error': 'Batch not found'}, status=status.HTTP_404_NOT_FOUND)
         return Response({'error': 'Unknown barcode format'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminExportViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    @action(detail=False, methods=['get'])
+    def export_data(self, request):
+        from io import BytesIO
+        from django.http import HttpResponse
+        from inventory.management.commands.export_data import MODELS_IN_ORDER
+        from django.core.serializers import serialize
+        from django.contrib.auth import get_user_model
+        from django.contrib.auth.models import Group
+        from datetime import datetime, timezone
+        import json
+
+        User = get_user_model()
+        indent = 2
+
+        export = {
+            'version': '1.0',
+            'exported_at': datetime.now(timezone.utc).isoformat(),
+            'models': {},
+        }
+
+        users = User.objects.all().order_by('id')
+        export['models']['User'] = [
+            {
+                'id': str(u.id), 'username': u.username, 'email': u.email,
+                'is_superuser': u.is_superuser, 'is_staff': u.is_staff,
+                'is_active': u.is_active,
+                'groups': list(u.groups.values_list('name', flat=True)),
+            }
+            for u in users
+        ]
+
+        groups = Group.objects.all().order_by('id')
+        export['models']['Group'] = [
+            {'id': str(g.id), 'name': g.name,
+             'permissions': list(g.permissions.values_list('codename', flat=True))}
+            for g in groups
+        ]
+
+        for label in MODELS_IN_ORDER:
+            from django.apps import apps
+            model_cls = apps.get_model('inventory', label)
+            qs = model_cls.objects.all().order_by('id')
+            raw = serialize('json', qs)
+            export['models'][label] = json.loads(raw)
+
+        output = json.dumps(export, indent=indent)
+        buffer = BytesIO(output.encode())
+        response = HttpResponse(buffer, content_type='application/json')
+        response['Content-Disposition'] = 'attachment; filename="inventory_export.json"'
+        return response
