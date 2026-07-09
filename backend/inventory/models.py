@@ -229,7 +229,7 @@ class SalesOrder(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='sales_orders')
     status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.DRAFT)
     order_date = models.DateTimeField(auto_now_add=True)
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=14, decimal_places=0, default=0)
     notes = models.TextField(blank=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='sales_orders')
     updated_at = models.DateTimeField(auto_now=True)
@@ -263,6 +263,7 @@ class PurchaseOrder(models.Model):
     status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.DRAFT)
     order_date = models.DateTimeField(auto_now_add=True)
     expected_date = models.DateField(null=True, blank=True)
+    total_amount = models.DecimalField(max_digits=14, decimal_places=0, default=0)
     notes = models.TextField(blank=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='purchase_orders')
     updated_at = models.DateTimeField(auto_now=True)
@@ -325,8 +326,8 @@ class OrderLineItem(models.Model):
     batch = models.ForeignKey(Batch, on_delete=models.PROTECT, null=True, blank=True, related_name='order_line_items')
     quantity_cartons = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0)])
     quantity_loose = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0)])
-    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    line_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    unit_price = models.DecimalField(max_digits=14, decimal_places=0, default=0)
+    line_total = models.DecimalField(max_digits=14, decimal_places=0, default=0)
 
     class Meta:
         indexes = [

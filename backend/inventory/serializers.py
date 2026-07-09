@@ -210,7 +210,7 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = PurchaseOrder
         fields = '__all__'
-        read_only_fields = ['id', 'order_number', 'order_date', 'updated_at']
+        read_only_fields = ['id', 'order_number', 'order_date', 'total_amount', 'updated_at']
 
 
 class CreateSalesOrderSerializer(serializers.Serializer):

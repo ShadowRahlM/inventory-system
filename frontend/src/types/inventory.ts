@@ -288,6 +288,7 @@ export interface PurchaseOrder {
   status: OrderStatus;
   order_date: string;
   expected_date: string | null;
+  total_amount: number;
   notes: string;
   created_by: number;
   created_by_username: string;

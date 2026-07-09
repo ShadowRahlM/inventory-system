@@ -715,15 +715,19 @@ class OrderService:
             notes=notes,
             created_by=performed_by,
         )
+        total = 0
         for item in items:
             tile = Tile.objects.get(id=item['tile_id'])
-            OrderLineItem.objects.create(
+            line = OrderLineItem.objects.create(
                 purchase_order=order,
                 tile=tile,
                 quantity_cartons=item.get('cartons', 0),
                 quantity_loose=item.get('loose_pieces', 0),
                 unit_price=item.get('unit_price', 0),
             )
+            total += line.line_total
+        order.total_amount = total
+        order.save(update_fields=['total_amount'])
         return order
 
     @staticmethod
