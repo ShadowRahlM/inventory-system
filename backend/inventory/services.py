@@ -580,7 +580,8 @@ class OrderService:
         order = SalesOrder.objects.select_for_update().get(id=order_id)
         if order.status != OrderStatus.DRAFT:
             raise ValidationError(f"Cannot confirm order in status {order.status}")
-        items = list(OrderLineItem.objects.filter(sales_order=order).select_related('tile', 'batch'))
+        items = list(OrderLineItem.objects.filter(sales_order=order).select_related('tile'))
+        movements = []
         for item in items:
             available = InventoryService.get_available_stock(item.tile_id)
             total_requested = (item.quantity_cartons * item.tile.pieces_per_carton) + item.quantity_loose
@@ -589,19 +590,6 @@ class OrderService:
                     f"Insufficient stock for {item.tile.sku}: "
                     f"available {available['total_pieces']}, requested {total_requested}"
                 )
-        order.status = OrderStatus.CONFIRMED
-        order.save(update_fields=['status'])
-        return order
-
-    @staticmethod
-    @transaction.atomic
-    def ship_sales_order(order_id: uuid.UUID, performed_by: User) -> SalesOrder:
-        order = SalesOrder.objects.get(id=order_id)
-        if order.status != OrderStatus.CONFIRMED:
-            raise ValidationError(f"Cannot ship order in status {order.status}")
-        items = list(OrderLineItem.objects.filter(sales_order=order).select_related('tile'))
-        movements = []
-        for item in items:
             inv_records = Inventory.objects.filter(
                 tile=item.tile,
                 batch__is_active=True
@@ -633,12 +621,22 @@ class OrderService:
                     new_cartons=inv.cartons,
                     new_loose_pieces=inv.loose_pieces,
                     reference=order.order_number,
-                    reason=f"Sales order {order.order_number} shipped",
+                    reason=f"Sales order {order.order_number} confirmed",
                     performed_by=performed_by,
                 ))
                 inv.save()
         if movements:
             Movement.objects.bulk_create(movements)
+        order.status = OrderStatus.CONFIRMED
+        order.save(update_fields=['status'])
+        return order
+
+    @staticmethod
+    @transaction.atomic
+    def ship_sales_order(order_id: uuid.UUID, performed_by: User) -> SalesOrder:
+        order = SalesOrder.objects.get(id=order_id)
+        if order.status != OrderStatus.CONFIRMED:
+            raise ValidationError(f"Cannot ship order in status {order.status}")
         order.status = OrderStatus.SHIPPED
         order.save(update_fields=['status'])
         return order
@@ -651,7 +649,7 @@ class OrderService:
             raise ValidationError(f"Cannot cancel order in status {order.status}")
         old_status = order.status
 
-        if old_status == OrderStatus.SHIPPED:
+        if old_status in (OrderStatus.CONFIRMED, OrderStatus.SHIPPED):
             dispatch_movements = Movement.objects.filter(
                 reference=order.order_number,
                 movement_type=MovementType.DISPATCH,
