@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useState, useCallback, useMemo } from 'react';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -191,29 +191,89 @@ function PurchaseOrdersView() {
   );
 }
 
-const createSalesOrderSchema = z.object({
-  customer_id: z.string().min(1, 'Customer is required'),
+const itemSchema = z.object({
   tile_id: z.string().min(1, 'Tile is required'),
   cartons: z.coerce.number().int().min(0).default(0),
   loose_pieces: z.coerce.number().int().min(0).default(0),
-  unit_price: z.coerce.number().min(0).default(0),
+  unit_price: z.coerce.number().int().min(0).default(0),
+});
+
+const createSalesOrderSchema = z.object({
+  customer_id: z.string().min(1, 'Customer is required'),
+  items: z.array(itemSchema).min(1, 'At least one item is required'),
   notes: z.string().optional(),
 });
+
+function SalesOrderLineItemRow({ index, control, tileOptions, remove, isOnly }: {
+  index: number;
+  control: any;
+  tileOptions: { value: string; label: string }[];
+  remove: () => void;
+  isOnly: boolean;
+}) {
+  return (
+    <div className="flex gap-2 items-start">
+      <div className="flex-1 min-w-0">
+        <Controller
+          name={`items.${index}.tile_id`}
+          control={control}
+          render={({ field }) => (
+            <SearchableSelect
+              label=""
+              options={tileOptions}
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              placeholder="Tile..."
+            />
+          )}
+        />
+      </div>
+      <Controller name={`items.${index}.cartons`} control={control} render={({ field }) => (
+        <input value={field.value as number} onChange={field.onChange} type="number" className="w-16 border rounded px-2 py-2 text-sm" placeholder="Ctns" />
+      )} />
+      <Controller name={`items.${index}.loose_pieces`} control={control} render={({ field }) => (
+        <input value={field.value as number} onChange={field.onChange} type="number" className="w-16 border rounded px-2 py-2 text-sm" placeholder="Lse" />
+      )} />
+      <Controller name={`items.${index}.unit_price`} control={control} render={({ field }) => (
+        <input value={field.value as number} onChange={field.onChange} type="number" step="1" className="w-24 border rounded px-2 py-2 text-sm" placeholder="Price" />
+      )} />
+      {!isOnly && (
+        <button type="button" onClick={remove} className="px-2 py-2 text-red-500 hover:text-red-700 text-lg">&times;</button>
+      )}
+    </div>
+  );
+}
 
 function NewSalesOrderForm() {
   const { data: customers } = useCustomersList();
   const { data: tiles } = useTilesList();
   const createMutation = useCreateSalesOrder();
-  const { control, handleSubmit, reset, formState: { errors } } = useForm({
+  const { control, handleSubmit, reset, formState: { errors }, watch } = useForm({
     resolver: zodResolver(createSalesOrderSchema),
-    defaultValues: { customer_id: '', tile_id: '', cartons: 0, loose_pieces: 0, unit_price: 0, notes: '' },
+    defaultValues: { customer_id: '', items: [{ tile_id: '', cartons: 0, loose_pieces: 0, unit_price: 0 }], notes: '' },
   });
+  const { fields, append, remove } = useFieldArray({ control, name: 'items' });
+
+  const watchedItems = watch('items');
+  const total = useMemo(() => {
+    const pcsMap = new Map((tiles?.results ?? []).map((t: any) => [t.id, t.pieces_per_carton]));
+    return (watchedItems ?? []).reduce((sum: number, item: any) => {
+      const pcs = pcsMap.get(item.tile_id) ?? 1;
+      return sum + ((item.cartons ?? 0) * pcs + (item.loose_pieces ?? 0)) * (item.unit_price ?? 0);
+    }, 0);
+  }, [watchedItems, tiles]);
 
   const onSubmit = useCallback((data: any) => {
     createMutation.mutate({
       customer_id: data.customer_id,
       notes: data.notes,
-      items: [{ tile_id: data.tile_id, cartons: data.cartons, loose_pieces: data.loose_pieces, unit_price: data.unit_price }],
+      items: data.items.map((item: any) => ({
+        tile_id: item.tile_id,
+        cartons: item.cartons,
+        loose_pieces: item.loose_pieces,
+        unit_price: item.unit_price,
+      })),
     }, { onSuccess: () => reset() });
   }, [createMutation, reset]);
 
@@ -221,7 +281,7 @@ function NewSalesOrderForm() {
   const tileOptions = (tiles?.results ?? []).map((t: any) => ({ value: t.id, label: `${t.sku} — ${t.name}` }));
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-md">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-2xl">
       <h2 className="text-xl font-bold mb-4">Create Sales Order</h2>
       {createMutation.isError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -248,41 +308,30 @@ function NewSalesOrderForm() {
           />
         )}
       />
-      <Controller
-        name="tile_id"
-        control={control}
-        render={({ field }) => (
-          <SearchableSelect
-            label="Tile"
-            options={tileOptions}
-            value={field.value}
-            onChange={field.onChange}
-            onBlur={field.onBlur}
-            placeholder="Search tile..."
-            error={errors.tile_id?.message as string}
-          />
-        )}
-      />
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-700">Cartons</label>
-          <Controller name="cartons" control={control} render={({ field }) => (
-            <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" className="w-full border rounded px-3 py-2 text-sm" />
-          )} />
-        </div>
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-700">Loose Pieces</label>
-          <Controller name="loose_pieces" control={control} render={({ field }) => (
-            <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" className="w-full border rounded px-3 py-2 text-sm" />
-          )} />
-        </div>
-      </div>
+
       <div>
-        <label className="block mb-1 text-sm font-medium text-gray-700">Unit Price (UGX)</label>
-        <Controller name="unit_price" control={control} render={({ field }) => (
-          <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" step="1" className="w-full border rounded px-3 py-2 text-sm" />
-        )} />
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-sm font-medium text-gray-700">Items</label>
+          <button type="button" onClick={() => append({ tile_id: '', cartons: 0, loose_pieces: 0, unit_price: 0 })}
+            className="text-sm text-blue-600 hover:text-blue-800">+ Add Item</button>
+        </div>
+        <div className="space-y-2">
+          <div className="flex gap-2 text-xs text-gray-500 px-2">
+            <div className="flex-1">Tile</div>
+            <div className="w-16 text-center">Ctns</div>
+            <div className="w-16 text-center">Lse</div>
+            <div className="w-24 text-center">Price</div>
+            <div className="w-8" />
+          </div>
+          {fields.map((field, index) => (
+            <SalesOrderLineItemRow key={field.id} index={index} control={control} tileOptions={tileOptions} remove={() => remove(index)} isOnly={fields.length === 1} />
+          ))}
+        </div>
+        {errors.items && <p className="text-xs text-red-500 mt-1">{errors.items.message ?? errors.items.root?.message}</p>}
       </div>
+
+      <div className="text-right text-lg font-bold">Total: UGX {total.toLocaleString()}</div>
+
       <div>
         <label className="block mb-1 text-sm font-medium text-gray-700">Notes</label>
         <Controller name="notes" control={control} render={({ field }) => (
@@ -299,10 +348,7 @@ function NewSalesOrderForm() {
 
 const createPurchaseOrderSchema = z.object({
   supplier_id: z.string().min(1, 'Supplier is required'),
-  tile_id: z.string().min(1, 'Tile is required'),
-  cartons: z.coerce.number().int().min(0).default(0),
-  loose_pieces: z.coerce.number().int().min(0).default(0),
-  unit_price: z.coerce.number().min(0).default(0),
+  items: z.array(itemSchema).min(1, 'At least one item is required'),
   expected_date: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -311,17 +357,32 @@ function NewPurchaseOrderForm() {
   const { data: suppliers } = useSuppliersList();
   const { data: tiles } = useTilesList();
   const createMutation = useCreatePurchaseOrder();
-  const { control, handleSubmit, reset, formState: { errors } } = useForm({
+  const { control, handleSubmit, reset, formState: { errors }, watch } = useForm({
     resolver: zodResolver(createPurchaseOrderSchema),
-    defaultValues: { supplier_id: '', tile_id: '', cartons: 0, loose_pieces: 0, unit_price: 0, expected_date: '', notes: '' },
+    defaultValues: { supplier_id: '', items: [{ tile_id: '', cartons: 0, loose_pieces: 0, unit_price: 0 }], expected_date: '', notes: '' },
   });
+  const { fields, append, remove } = useFieldArray({ control, name: 'items' });
+
+  const watchedItems = watch('items');
+  const total = useMemo(() => {
+    const pcsMap = new Map((tiles?.results ?? []).map((t: any) => [t.id, t.pieces_per_carton]));
+    return (watchedItems ?? []).reduce((sum: number, item: any) => {
+      const pcs = pcsMap.get(item.tile_id) ?? 1;
+      return sum + ((item.cartons ?? 0) * pcs + (item.loose_pieces ?? 0)) * (item.unit_price ?? 0);
+    }, 0);
+  }, [watchedItems, tiles]);
 
   const onSubmit = useCallback((data: any) => {
     createMutation.mutate({
       supplier_id: data.supplier_id,
       expected_date: data.expected_date || undefined,
       notes: data.notes,
-      items: [{ tile_id: data.tile_id, cartons: data.cartons, loose_pieces: data.loose_pieces, unit_price: data.unit_price }],
+      items: data.items.map((item: any) => ({
+        tile_id: item.tile_id,
+        cartons: item.cartons,
+        loose_pieces: item.loose_pieces,
+        unit_price: item.unit_price,
+      })),
     }, { onSuccess: () => reset() });
   }, [createMutation, reset]);
 
@@ -329,7 +390,7 @@ function NewPurchaseOrderForm() {
   const tileOptions = (tiles?.results ?? []).map((t: any) => ({ value: t.id, label: `${t.sku} — ${t.name}` }));
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-md">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-2xl">
       <h2 className="text-xl font-bold mb-4">Create Purchase Order</h2>
       {createMutation.isError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -356,41 +417,30 @@ function NewPurchaseOrderForm() {
           />
         )}
       />
-      <Controller
-        name="tile_id"
-        control={control}
-        render={({ field }) => (
-          <SearchableSelect
-            label="Tile"
-            options={tileOptions}
-            value={field.value}
-            onChange={field.onChange}
-            onBlur={field.onBlur}
-            placeholder="Search tile..."
-            error={errors.tile_id?.message as string}
-          />
-        )}
-      />
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-700">Cartons</label>
-          <Controller name="cartons" control={control} render={({ field }) => (
-            <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" className="w-full border rounded px-3 py-2 text-sm" />
-          )} />
-        </div>
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-700">Loose Pieces</label>
-          <Controller name="loose_pieces" control={control} render={({ field }) => (
-            <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" className="w-full border rounded px-3 py-2 text-sm" />
-          )} />
-        </div>
-      </div>
+
       <div>
-        <label className="block mb-1 text-sm font-medium text-gray-700">Unit Price (UGX)</label>
-        <Controller name="unit_price" control={control} render={({ field }) => (
-          <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" step="1" className="w-full border rounded px-3 py-2 text-sm" />
-        )} />
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-sm font-medium text-gray-700">Items</label>
+          <button type="button" onClick={() => append({ tile_id: '', cartons: 0, loose_pieces: 0, unit_price: 0 })}
+            className="text-sm text-blue-600 hover:text-blue-800">+ Add Item</button>
+        </div>
+        <div className="space-y-2">
+          <div className="flex gap-2 text-xs text-gray-500 px-2">
+            <div className="flex-1">Tile</div>
+            <div className="w-16 text-center">Ctns</div>
+            <div className="w-16 text-center">Lse</div>
+            <div className="w-24 text-center">Price</div>
+            <div className="w-8" />
+          </div>
+          {fields.map((field, index) => (
+            <SalesOrderLineItemRow key={field.id} index={index} control={control} tileOptions={tileOptions} remove={() => remove(index)} isOnly={fields.length === 1} />
+          ))}
+        </div>
+        {errors.items && <p className="text-xs text-red-500 mt-1">{errors.items.message ?? errors.items.root?.message}</p>}
       </div>
+
+      <div className="text-right text-lg font-bold">Total: UGX {total.toLocaleString()}</div>
+
       <div>
         <label className="block mb-1 text-sm font-medium text-gray-700">Expected Date</label>
         <Controller name="expected_date" control={control} render={({ field }) => (
