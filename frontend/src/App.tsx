@@ -97,9 +97,12 @@ function Login() {
   );
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children, adminOnly }: { children: React.ReactNode; adminOnly?: boolean }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+  const user = useAuthStore((state) => state.user);
+  if (!isAuthenticated) return <Navigate to="/login" />;
+  if (adminOnly && user?.role !== 'admin') return <Navigate to="/" />;
+  return <>{children}</>;
 }
 
 function App() {
@@ -160,12 +163,12 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/stock-take" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute adminOnly>
                     <StockTake />
                   </ProtectedRoute>
                 } />
                 <Route path="/catalogs" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute adminOnly>
                     <Catalogs />
                   </ProtectedRoute>
                 } />
@@ -175,7 +178,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/users" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute adminOnly>
                     <UserManagement />
                   </ProtectedRoute>
                 } />
@@ -200,12 +203,12 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/sync-conflicts" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute adminOnly>
                     <SyncConflictsPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin-export" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute adminOnly>
                     <AdminExport />
                   </ProtectedRoute>
                 } />

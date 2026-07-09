@@ -10,14 +10,11 @@ const navigation = [
   { name: 'Batches', href: '/batches', icon: '📦' },
   { name: 'Inventory', href: '/inventory', icon: '📋' },
   { name: 'Movements', href: '/movements', icon: '🔄' },
-  { name: 'Stock Take', href: '/stock-take', icon: '📥' },
-  { name: 'Catalogs', href: '/catalogs', icon: '📕' },
   { name: 'Audit Logs', href: '/audit-logs', icon: '📝' },
   { name: 'Orders', href: '/orders', icon: '📋' },
   { name: 'Customers/Suppliers', href: '/customers-suppliers', icon: '🏢' },
   { name: 'Reports', href: '/reports', icon: '📊' },
   { name: 'Low Stock', href: '/low-stock', icon: '⚠️' },
-  { name: 'Users', href: '/users', icon: '👥' },
 ];
 
 export function Sidebar() {
@@ -63,6 +60,33 @@ export function Sidebar() {
         ))}
         {isAdmin && (
           <>
+            <Link
+              to="/stock-take"
+              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
+                location.pathname === '/stock-take' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              }`}
+            >
+              <span className="text-xl">📥</span>
+              {sidebarOpen && <span className="ml-3">Stock Take</span>}
+            </Link>
+            <Link
+              to="/catalogs"
+              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
+                location.pathname === '/catalogs' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              }`}
+            >
+              <span className="text-xl">📕</span>
+              {sidebarOpen && <span className="ml-3">Catalogs</span>}
+            </Link>
+            <Link
+              to="/users"
+              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
+                location.pathname === '/users' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              }`}
+            >
+              <span className="text-xl">👥</span>
+              {sidebarOpen && <span className="ml-3">Users</span>}
+            </Link>
             <Link
               to="/sync-conflicts"
               className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${

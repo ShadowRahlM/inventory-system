@@ -6,7 +6,7 @@ import { Sidebar } from '../Sidebar'
 import { useAuthStore, useUIStore } from '../../lib/store'
 
 beforeEach(() => {
-  useAuthStore.setState({ isAuthenticated: true, user: { username: 'manager', role: 'manager' } })
+  useAuthStore.setState({ isAuthenticated: true, user: { username: 'admin', role: 'admin' } })
   useUIStore.setState({ sidebarOpen: true, selectedTile: null })
 })
 
@@ -23,14 +23,16 @@ describe('Sidebar', () => {
     expect(screen.getByText('Batches')).toBeInTheDocument()
     expect(screen.getByText('Inventory')).toBeInTheDocument()
     expect(screen.getByText('Movements')).toBeInTheDocument()
-    expect(screen.getByText('Catalogs')).toBeInTheDocument()
     expect(screen.getByText('Audit Logs')).toBeInTheDocument()
+    expect(screen.getByText('Catalogs')).toBeInTheDocument()
+    expect(screen.getByText('Stock Take')).toBeInTheDocument()
+    expect(screen.getByText('Users')).toBeInTheDocument()
   })
 
   it('displays the username and role from auth store', () => {
     renderSidebar()
-    const managerElements = screen.getAllByText(/manager/)
-    expect(managerElements.length).toBe(2)
+    const adminElements = screen.getAllByText(/admin/)
+    expect(adminElements.length).toBe(2)
   })
 
   it('shows sign out button', () => {
