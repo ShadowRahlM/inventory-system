@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '../api/inventoryApi';
 import { INVENTORY_KEYS } from '../hooks/useInventoryQueries';
@@ -138,6 +138,27 @@ export function Catalogs() {
     createMutation.mutate({ name: name.trim(), description, json_data: parsed as Record<string, unknown> });
   };
 
+  useEffect(() => {
+    if (!jsonInput.trim()) { setJsonError(null); setExistingSkus({}); setDedupPending(false); return; }
+    setDedupPending(true);
+    const timer = setTimeout(async () => {
+      const { cleaned, error } = cleanCatalogJson(jsonInput);
+      setJsonError(error ?? null);
+      if (error) { setDedupPending(false); return; }
+      let parsed: unknown;
+      try { parsed = JSON.parse(cleaned); } catch { setDedupPending(false); return; }
+      if (!Array.isArray(parsed) || parsed.length === 0) { setDedupPending(false); return; }
+      const skus = parsed.map((i: any) => i.sku).filter(Boolean) as string[];
+      if (skus.length === 0) { setDedupPending(false); return; }
+      try {
+        const result = await inventoryApi.tiles.checkSkus(skus);
+        setExistingSkus(result.existing);
+      } catch { return; }
+      finally { setDedupPending(false); }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [jsonInput]);
+
   const handleCleanJson = async () => {
     const { cleaned, error } = cleanCatalogJson(jsonInput);
     if (error && !cleaned) {
@@ -178,20 +199,6 @@ export function Catalogs() {
       const { cleaned, error } = cleanCatalogJson(text);
       setJsonError(error ?? null);
       setJsonInput(cleaned);
-      if (error) return;
-
-      let parsed: unknown;
-      try { parsed = JSON.parse(cleaned); } catch { return; }
-      if (!Array.isArray(parsed)) return;
-
-      const skus = parsed.map((i: any) => i.sku).filter(Boolean) as string[];
-      if (skus.length === 0) return;
-
-      setDedupPending(true);
-      inventoryApi.tiles.checkSkus(skus)
-        .then((result) => setExistingSkus(result.existing))
-        .catch(() => {})
-        .finally(() => setDedupPending(false));
     };
     reader.onerror = () => setJsonError('Failed to read file');
     reader.readAsText(file);
@@ -307,7 +314,7 @@ export function Catalogs() {
               </>
             )}
           </div>
-          <textarea ref={textareaRef} value={jsonInput} onChange={(e) => { setJsonInput(e.target.value); setExistingSkus({}); }} className="w-full border rounded px-3 py-2 font-mono text-sm" rows={10} placeholder='[{"sku": "TILE-001", "name": "Sample Tile", "dimensions": "30x30cm", "pieces_per_carton": 10, "category": "Wall", "brand": "goodwill"}]' />
+          <textarea ref={textareaRef} value={jsonInput} onChange={(e) => { setJsonInput(e.target.value); setJsonError(null); }} className="w-full border rounded px-3 py-2 font-mono text-sm" rows={10} placeholder='[{"sku": "TILE-001", "name": "Sample Tile", "dimensions": "30x30cm", "pieces_per_carton": 10, "category": "Wall", "brand": "goodwill"}]' />
         </div>
 
         {existingSkusCount > 0 && (

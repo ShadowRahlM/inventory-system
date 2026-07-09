@@ -154,10 +154,12 @@ export function StockTake() {
   const [rawJson, setRawJson] = useState('');
   const [result, setResult] = useState<StockTakeResult | null>(null);
 
-  const preview: PreviewEntry[] = useMemo(
-    () => rawJson.trim() ? parseAndPreview(rawJson).entries : [],
+  const parseResult = useMemo(
+    () => rawJson.trim() ? parseAndPreview(rawJson) : { entries: [] as PreviewEntry[], error: undefined as string | undefined },
     [rawJson],
   );
+  const preview = parseResult.entries;
+  const parseError = parseResult.error;
 
   const skus = useMemo(
     () => [...new Set(preview.map(e => e.sku))].sort(),
@@ -245,8 +247,18 @@ export function StockTake() {
           value={rawJson}
           onChange={(e) => { setRawJson(e.target.value); setResult(null); }}
           className="w-full h-48 border rounded px-3 py-2 font-mono text-sm"
-          placeholder='{"image_1": {"SKU1": 10, "SKU2": "36 + 72"}, ...}'
+          placeholder='[{"sku_code": "TILE-001", "boxes": 10}, {"sku_code": "TILE-002", "boxes": "36 + 72", "pcs_per_box": 10}]'
         />
+        {parseError && (
+          <div className="mt-2 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-sm">
+            {parseError}
+          </div>
+        )}
+        {rawJson.trim() && preview.length === 0 && !parseError && (
+          <div className="mt-2 bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-2 rounded text-sm">
+            No valid items found. Check that each item has a non-empty <code>sku_code</code> and <code>boxes</code> &gt; 0.
+          </div>
+        )}
       </div>
 
       {preview.length > 0 && (
