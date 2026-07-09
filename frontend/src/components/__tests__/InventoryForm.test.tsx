@@ -15,6 +15,10 @@ vi.mock('../../hooks/useInventoryQueries', () => ({
     data: null,
     error: null,
   })),
+  useTilesList: vi.fn(() => ({
+    data: { results: [] },
+    isLoading: false,
+  })),
 }))
 
 beforeEach(() => {
@@ -24,10 +28,9 @@ beforeEach(() => {
 describe('ReceiveInventoryForm', () => {
   it('renders all form field labels', () => {
     render(<ReceiveInventoryForm />)
-    expect(screen.getByText(/Tile ID/)).toBeInTheDocument()
-    expect(screen.getByText(/Batch Number/)).toBeInTheDocument()
-    expect(screen.getByText(/Supplier/)).toBeInTheDocument()
+    expect(screen.getByText(/Tile/)).toBeInTheDocument()
     expect(screen.getByText(/Cartons/)).toBeInTheDocument()
+    expect(screen.getByText(/Loose Pieces/)).toBeInTheDocument()
     expect(screen.getByText(/Location/)).toBeInTheDocument()
   })
 
