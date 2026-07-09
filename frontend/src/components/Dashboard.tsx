@@ -49,8 +49,8 @@ export function Dashboard() {
     title: string; value: string | number; color: string; isLoading?: boolean; error?: boolean;
   }) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow border">
-        <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <div className="bg-white p-8 rounded-xl shadow border">
+        <h3 className="text-lg font-semibold mb-3">{title}</h3>
         {isLoading ? (
           <div className="h-10 w-24 bg-gray-200 animate-pulse rounded" />
         ) : error ? (
@@ -63,10 +63,10 @@ export function Dashboard() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+    <div className="p-8 lg:p-10">
+      <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
         <SummaryCard
           title="Total Tiles"
           value={totalTiles}
@@ -89,10 +89,10 @@ export function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <Link to="/orders" className="block">
-          <div className="bg-white p-6 rounded-lg shadow border hover:shadow-md transition-shadow">
-            <h3 className="text-lg font-semibold mb-2">Pending Sales Orders</h3>
+          <div className="bg-white p-8 rounded-xl shadow border hover:shadow-md transition-shadow">
+            <h3 className="text-lg font-semibold mb-3">Pending Sales Orders</h3>
             {salesLoading ? (
               <div className="h-10 w-16 bg-gray-200 animate-pulse rounded" />
             ) : (
@@ -104,8 +104,8 @@ export function Dashboard() {
           </div>
         </Link>
         <Link to="/orders" className="block">
-          <div className="bg-white p-6 rounded-lg shadow border hover:shadow-md transition-shadow">
-            <h3 className="text-lg font-semibold mb-2">Pending Purchase Orders</h3>
+          <div className="bg-white p-8 rounded-xl shadow border hover:shadow-md transition-shadow">
+            <h3 className="text-lg font-semibold mb-3">Pending Purchase Orders</h3>
             {poLoading ? (
               <div className="h-10 w-16 bg-gray-200 animate-pulse rounded" />
             ) : (
@@ -118,12 +118,12 @@ export function Dashboard() {
         </Link>
       </div>
 
-      <div className="mb-8">
+      <div className="mb-10">
         <LowStockAlerts compact />
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow border mb-8">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="bg-white p-8 rounded-xl shadow border mb-10">
+        <div className="flex items-center gap-4 mb-6">
           <h2 className="text-xl font-semibold">Search Tiles</h2>
           <input
             type="text"
@@ -142,7 +142,7 @@ export function Dashboard() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {filteredTiles.map((tile: TileProduct) => (
-                  <div key={tile.id} className="border rounded overflow-hidden bg-gray-50 hover:shadow-md transition-shadow">
+                  <div key={tile.id} className="border rounded-lg overflow-hidden bg-gray-50 hover:shadow-md transition-shadow">
                     {tile.image ? (
                       <img
                         src={tile.image}
@@ -179,8 +179,8 @@ export function Dashboard() {
         )}
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow border">
-        <h2 className="text-xl font-semibold mb-4">Recent Inventory Items</h2>
+      <div className="bg-white p-8 rounded-xl shadow border">
+        <h2 className="text-xl font-semibold mb-6">Recent Inventory Items</h2>
         {stockLoading ? (
           <div className="space-y-2">
             {[1,2,3].map(i => <div key={i} className="h-8 bg-gray-100 animate-pulse rounded" />)}
