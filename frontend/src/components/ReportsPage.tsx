@@ -5,12 +5,12 @@ import { inventoryApi } from '../api/inventoryApi';
 export function ReportsPage() {
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('month');
 
-  const { data: stockSummary, isLoading: stockLoading } = useQuery({
+  const { data: stockSummary, isLoading: stockLoading, isError: stockError } = useQuery({
     queryKey: ['reports', 'stock-summary'],
     queryFn: () => inventoryApi.reports.stockSummary(),
   });
 
-  const { data: movementSummary, isLoading: movementLoading } = useQuery({
+  const { data: movementSummary, isLoading: movementLoading, isError: movementError } = useQuery({
     queryKey: ['reports', 'movement-summary', period],
     queryFn: () => inventoryApi.reports.movementSummary(period),
   });
@@ -22,7 +22,9 @@ export function ReportsPage() {
       {/* Stock Summary Cards */}
       <h2 className="text-xl font-semibold mb-3">Stock Overview</h2>
       {stockLoading ? (
-        <p className="text-gray-500 mb-6">Loading...</p>
+        <p className="text-gray-500 mb-6">Loading stock data...</p>
+      ) : stockError ? (
+        <p className="text-red-500 mb-6">Failed to load stock data</p>
       ) : stockSummary ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow border p-4">
@@ -72,7 +74,9 @@ export function ReportsPage() {
       </div>
 
       {movementLoading ? (
-        <p className="text-gray-500">Loading...</p>
+        <p className="text-gray-500">Loading movements...</p>
+      ) : movementError ? (
+        <p className="text-red-500">Failed to load movement data</p>
       ) : movementSummary ? (
         <div className="bg-white rounded-lg shadow border overflow-x-auto">
           {movementSummary.by_type.length > 0 && (

@@ -10,7 +10,7 @@ interface Props {
 export function LowStockAlerts({ compact }: Props) {
   const [threshold, setThreshold] = useState(50);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: [...INVENTORY_KEYS.stock(), 'low-stock', threshold],
     queryFn: () => inventoryApi.stock.lowStock(threshold),
   });
@@ -37,6 +37,8 @@ export function LowStockAlerts({ compact }: Props) {
         </div>
         {isLoading ? (
           <p className="text-gray-400 text-sm">Loading...</p>
+        ) : isError ? (
+          <p className="text-red-500 text-sm">Failed to load stock data</p>
         ) : count === 0 ? (
           <p className="text-green-600 text-sm">All stock levels are above {threshold} pieces ✓</p>
         ) : (
@@ -83,6 +85,8 @@ export function LowStockAlerts({ compact }: Props) {
 
       {isLoading ? (
         <p className="text-gray-500">Loading...</p>
+      ) : isError ? (
+        <p className="text-red-500">Failed to load low stock data</p>
       ) : count === 0 ? (
         <div className="bg-white rounded-lg shadow border p-8 text-center">
           <p className="text-green-600 text-lg font-medium">All stock levels are above {threshold} pieces ✓</p>

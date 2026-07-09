@@ -120,7 +120,14 @@ describe('inventoryApi stock', () => {
     const { inventoryApi } = await import('../inventoryApi')
     mockApi.get.mockResolvedValue({ data: { count: 0, results: [] } })
     await inventoryApi.stock.list()
-    expect(mockApi.get).toHaveBeenCalledWith('/inventory/inventory/')
+    expect(mockApi.get).toHaveBeenCalledWith('/inventory/inventory/', { params: undefined })
+  })
+
+  it('list with params calls GET with params', async () => {
+    const { inventoryApi } = await import('../inventoryApi')
+    mockApi.get.mockResolvedValue({ data: { count: 0, results: [] } })
+    await inventoryApi.stock.list({ page_size: 5000 })
+    expect(mockApi.get).toHaveBeenCalledWith('/inventory/inventory/', { params: { page_size: 5000 } })
   })
 
   it('available calls with tile_id param', async () => {

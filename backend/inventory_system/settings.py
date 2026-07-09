@@ -157,7 +157,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "inventory.filters.FlexiblePagination",
     "PAGE_SIZE": 50,
     "DEFAULT_FILTER_BACKENDS": (
         "inventory.filters.UpdatedSinceFilter",

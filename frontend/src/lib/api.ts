@@ -88,6 +88,7 @@ export const inventoryAPI = {
     dispatch: (data: any) => api.post('/inventory/operations/issue_dispatch/', data),
     adjust: (data: any) => api.post('/inventory/operations/adjust/', data),
     transfer: (data: any) => api.post('/inventory/operations/transfer/', data),
+    stockTake: (data: any) => api.post('/inventory/operations/stock_take/', data),
   },
 };
 

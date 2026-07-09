@@ -59,6 +59,7 @@ export function NewTile() {
     coverage_per_box: '',
     use_case: '',
     description: '',
+    is_mix: false,
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -90,6 +91,7 @@ export function NewTile() {
     fd.append('coverage_per_box', form.coverage_per_box);
     fd.append('use_case', form.use_case);
     fd.append('description', form.description);
+    fd.append('is_mix', form.is_mix ? 'true' : 'false');
     if (imageFile) fd.append('image', imageFile);
     createMutation.mutate(fd);
   };
@@ -171,6 +173,17 @@ export function NewTile() {
               {['Wall', 'Floor', 'Mosaic', 'Wood', 'Stone', 'Bathroom', 'Kitchen', 'Outdoor'].map((c) => <option key={c} value={c} />)}
             </datalist>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="is_mix"
+            checked={form.is_mix}
+            onChange={(e) => update({ is_mix: e.target.checked })}
+            className="rounded border-gray-300"
+          />
+          <label htmlFor="is_mix" className="text-sm font-medium">Mixed/Temporary Bin</label>
         </div>
 
         <fieldset className="border rounded p-4 space-y-4">

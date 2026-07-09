@@ -1,11 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, F, Q, Sum
+from django.utils import timezone
 
 from rest_framework import viewsets, status
-from django.utils import timezone
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -17,7 +16,7 @@ from .serializers import (
     UserSerializer, SetRoleSerializer,
     CustomerSerializer, SupplierSerializer, SalesOrderSerializer, PurchaseOrderSerializer, OrderLineItemSerializer,
     CreateSalesOrderSerializer, CreatePurchaseOrderSerializer, ConfirmOrderSerializer,
-    NotificationSerializer, SyncConflictSerializer,
+    NotificationSerializer, SyncConflictSerializer, StockTakeSerializer,
 )
 from .services import InventoryService, OrderService
 from .permissions import IsInventoryViewer, CanPerformInventoryOperations, IsAdminUser
@@ -134,12 +133,16 @@ class InventoryViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'])
     def low_stock(self, request):
         threshold = int(request.query_params.get('threshold', 50))
-        items = Inventory.objects.select_related('tile', 'batch').all()
-        low = [item for item in items if item.total_pieces <= threshold]
-        low_sorted = sorted(low, key=lambda x: x.total_pieces)
-        serializer = InventorySerializer(low_sorted, many=True)
+        low = Inventory.objects.select_related('tile', 'batch').annotate(
+            computed_total=F('cartons') * F('tile__pieces_per_carton') + F('loose_pieces')
+        ).filter(computed_total__lte=threshold).order_by('computed_total')
+        page = self.paginate_queryset(low)
+        if page is not None:
+            serializer = InventorySerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = InventorySerializer(low, many=True)
         return Response({
-            'count': len(low_sorted),
+            'count': len(serializer.data),
             'threshold': threshold,
             'results': serializer.data,
         })
@@ -405,6 +408,20 @@ class InventoryOperationViewSet(viewsets.ViewSet):
                 return Response({'success': False, 'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response({'success': False, 'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['post'])
+    def stock_take(self, request):
+        serializer = StockTakeSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                result = InventoryService.stock_take(
+                    data=serializer.validated_data['data'],
+                    performed_by=request.user,
+                )
+                return Response({'success': True, 'data': result}, status=status.HTTP_201_CREATED)
+            except (ValidationError, ObjectDoesNotExist) as e:
+                return Response({'success': False, 'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'success': False, 'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
 
 User = get_user_model()
 
@@ -415,11 +432,18 @@ class ReportViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def stock_summary(self, request):
         total_tiles = Tile.objects.count()
-        inventory_items = Inventory.objects.select_related('tile').all()
-        total_cartons = sum(item.cartons for item in inventory_items)
-        total_loose = sum(item.loose_pieces for item in inventory_items)
-        total_pieces = sum(item.total_pieces for item in inventory_items)
-        low_stock_count = sum(1 for item in inventory_items if item.total_pieces <= 50)
+        agg = Inventory.objects.aggregate(
+            total_cartons=Sum('cartons'),
+            total_loose=Sum('loose_pieces'),
+        )
+        total_cartons = agg['total_cartons'] or 0
+        total_loose = agg['total_loose'] or 0
+        total_pieces = Inventory.objects.annotate(
+            item_total=F('cartons') * F('tile__pieces_per_carton') + F('loose_pieces')
+        ).aggregate(total=Sum('item_total'))['total'] or 0
+        low_stock_count = Inventory.objects.annotate(
+            item_total=F('cartons') * F('tile__pieces_per_carton') + F('loose_pieces')
+        ).filter(item_total__lte=50).count()
         location_count = Inventory.objects.values('location').distinct().count()
         total_batches = Batch.objects.count()
         return Response({
@@ -740,11 +764,10 @@ class OrderOperationViewSet(viewsets.ViewSet):
         serializer = ConfirmOrderSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                order = PurchaseOrder.objects.get(id=serializer.validated_data['order_id'])
-                if order.status != OrderStatus.DRAFT:
-                    raise ValidationError(f"Cannot confirm purchase order in status {order.status}")
-                order.status = OrderStatus.CONFIRMED
-                order.save(update_fields=['status'])
+                order = OrderService.confirm_purchase_order(
+                    order_id=serializer.validated_data['order_id'],
+                    performed_by=request.user,
+                )
                 return Response({'success': True, 'data': PurchaseOrderSerializer(order).data})
             except (ValidationError, ObjectDoesNotExist) as e:
                 return Response({'success': False, 'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

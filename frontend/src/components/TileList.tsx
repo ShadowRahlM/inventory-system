@@ -11,6 +11,7 @@ export function TileList() {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
   const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState('');
   const [editingTile, setEditingTile] = useState<TileProduct | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -26,8 +27,8 @@ export function TileList() {
   }, [editId]);
 
   const { data: tiles, isLoading, error } = useQuery({
-    queryKey: INVENTORY_KEYS.tiles(),
-    queryFn: () => inventoryApi.tiles.list(),
+    queryKey: [...INVENTORY_KEYS.tiles(), 'list', search],
+    queryFn: () => inventoryApi.tiles.list(search ? { search, page_size: 5000 } : { page_size: 5000 }),
   });
 
   const deleteMutation = useMutation({
@@ -80,11 +81,26 @@ export function TileList() {
     }
   }, [allSelected, allIds]);
 
-  if (isLoading) return <div>Loading tiles...</div>;
-  if (error) return <div>Error loading tiles</div>;
-
   return (
     <div>
+      <div className="flex items-center gap-4 mb-4">
+        <input
+          type="text"
+          placeholder="Search by SKU, name, brand..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 max-w-md border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <span className="text-sm text-gray-500">{tiles?.count ?? 0} tiles</span>
+        {isLoading && <span className="text-xs text-gray-400 animate-pulse">Loading...</span>}
+      </div>
+
+      {error && (
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          Error loading tiles. Please try again.
+        </div>
+      )}
+
       {isAdmin && selectedIds.size > 0 && (
         <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
           <span className="text-sm text-blue-800 font-medium">
@@ -102,72 +118,91 @@ export function TileList() {
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border border-gray-300">
-          <thead>
-            <tr className="bg-gray-100">
-              {isAdmin && (
-                <th className="px-4 py-2 border-b w-10">
-                  <input type="checkbox" checked={allSelected} onChange={toggleAll} className="cursor-pointer" />
-                </th>
-              )}
-              <th className="px-4 py-2 border-b">Image</th>
-              <th className="px-4 py-2 border-b">SKU</th>
-              <th className="px-4 py-2 border-b">Name</th>
-              <th className="px-4 py-2 border-b">Brand</th>
-              <th className="px-4 py-2 border-b">Series</th>
-              <th className="px-4 py-2 border-b">Tier</th>
-              <th className="px-4 py-2 border-b">Dimensions</th>
-              <th className="px-4 py-2 border-b">Pcs/Ctn</th>
-              <th className="px-4 py-2 border-b">Category</th>
-              <th className="px-4 py-2 border-b">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tiles?.results?.map((tile: TileProduct) => (
-              <tr key={tile.id} className={`hover:bg-gray-50 ${selectedIds.has(tile.id) ? 'bg-blue-50' : ''}`}>
+      {!error && (!tiles?.results || tiles.results.length === 0) && !search && !isLoading ? (
+        <div className="text-center py-12 text-gray-500">
+          <p className="text-lg">No tiles found</p>
+          <p className="text-sm mt-1">Create a new tile to get started</p>
+        </div>
+      ) : !error && tiles?.results?.length === 0 && search && !isLoading ? (
+        <div className="text-center py-12 text-gray-500">
+          <p className="text-lg">No tiles match your search</p>
+        </div>
+      ) : !error ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-gray-300">
+            <thead>
+              <tr className="bg-gray-100">
                 {isAdmin && (
-                  <td className="px-4 py-2 border-b">
-                    <input type="checkbox" checked={selectedIds.has(tile.id)} onChange={() => toggleSelect(tile.id)} className="cursor-pointer" />
-                  </td>
+                  <th className="px-4 py-2 border-b w-10">
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} className="cursor-pointer" />
+                  </th>
                 )}
-                <td className="px-4 py-2 border-b">
-                  {tile.image ? (
-                    <img src={tile.image} alt={tile.sku} className="w-12 h-12 object-cover rounded" loading="lazy" />
-                  ) : (
-                    <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-300 text-xs">—</div>
-                  )}
-                </td>
-                <td className="px-4 py-2 border-b">
-                  <div className="flex items-center gap-1">
-                    {tile.sku}
-                    <a href={`https://www.google.com/search?q=${encodeURIComponent(tile.sku + ' tile')}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-600 text-xs" title="Search on Google">🔍</a>
-                  </div>
-                </td>
-                <td className="px-4 py-2 border-b">{tile.name}</td>
-                <td className="px-4 py-2 border-b text-sm">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${tile.brand === 'crown_crane' ? 'bg-yellow-100 text-yellow-800' : tile.brand === 'goodwill' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                    {tile.brand === 'crown_crane' ? 'Crown Crane' : tile.brand === 'goodwill' ? 'Goodwill' : tile.brand}
-                  </span>
-                </td>
-                <td className="px-4 py-2 border-b text-sm text-gray-600">{tile.series || '—'}</td>
-                <td className="px-4 py-2 border-b">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${tile.tier === 'premium' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                    {tile.tier === 'premium' ? 'Premium' : 'Standard'}
-                  </span>
-                </td>
-                <td className="px-4 py-2 border-b">{tile.dimensions}</td>
-                <td className="px-4 py-2 border-b">{tile.pieces_per_carton}</td>
-                <td className="px-4 py-2 border-b">{tile.category}</td>
-                <td className="px-4 py-2 border-b">
-                  <button onClick={() => setEditingTile(tile)} className="text-blue-600 hover:text-blue-800 mr-2 text-sm">Edit</button>
-                  {isAdmin && <button onClick={() => { setDeleteId(tile.id); setDeleteError(null); }} className="text-red-600 hover:text-red-800 text-sm">Delete</button>}
-                </td>
+                <th className="px-4 py-2 border-b">Image</th>
+                <th className="px-4 py-2 border-b">SKU</th>
+                <th className="px-4 py-2 border-b">Name</th>
+                <th className="px-4 py-2 border-b">Brand</th>
+                <th className="px-4 py-2 border-b">Series</th>
+                <th className="px-4 py-2 border-b">Tier</th>
+                <th className="px-4 py-2 border-b">Dimensions</th>
+                <th className="px-4 py-2 border-b">Pcs/Ctn</th>
+                <th className="px-4 py-2 border-b">Category</th>
+                <th className="px-4 py-2 border-b">Mix</th>
+                <th className="px-4 py-2 border-b">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {tiles?.results?.map((tile: TileProduct) => (
+                <tr key={tile.id} className={`hover:bg-gray-50 ${selectedIds.has(tile.id) ? 'bg-blue-50' : ''}`}>
+                  {isAdmin && (
+                    <td className="px-4 py-2 border-b">
+                      <input type="checkbox" checked={selectedIds.has(tile.id)} onChange={() => toggleSelect(tile.id)} className="cursor-pointer" />
+                    </td>
+                  )}
+                  <td className="px-4 py-2 border-b">
+                    {tile.image ? (
+                      <img src={tile.image} alt={tile.sku} className="w-12 h-12 object-cover rounded" loading="lazy" />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-300 text-xs">—</div>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 border-b">
+                    <div className="flex items-center gap-1">
+                      {tile.sku}
+                      <a href={`https://www.google.com/search?q=${encodeURIComponent(tile.sku + ' tile')}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-600 text-xs" title="Search on Google">🔍</a>
+                    </div>
+                  </td>
+                  <td className="px-4 py-2 border-b">{tile.name}</td>
+                  <td className="px-4 py-2 border-b text-sm">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${tile.brand === 'crown_crane' ? 'bg-yellow-100 text-yellow-800' : tile.brand === 'goodwill' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                      {tile.brand === 'crown_crane' ? 'Crown Crane' : tile.brand === 'goodwill' ? 'Goodwill' : tile.brand}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 border-b text-sm text-gray-600">{tile.series || '—'}</td>
+                  <td className="px-4 py-2 border-b">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${tile.tier === 'premium' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                      {tile.tier === 'premium' ? 'Premium' : 'Standard'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 border-b">{tile.dimensions}</td>
+                  <td className="px-4 py-2 border-b">{tile.pieces_per_carton}</td>
+                  <td className="px-4 py-2 border-b">{tile.category}</td>
+                  <td className="px-4 py-2 border-b">
+                    {tile.is_mix ? (
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">Yes</span>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 border-b">
+                    <button onClick={() => setEditingTile(tile)} className="text-blue-600 hover:text-blue-800 mr-2 text-sm">Edit</button>
+                    {isAdmin && <button onClick={() => { setDeleteId(tile.id); setDeleteError(null); }} className="text-red-600 hover:text-red-800 text-sm">Delete</button>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
 
       {deleteId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setDeleteId(null)}>
@@ -239,6 +274,7 @@ function EditTileModal({
     coverage_per_box: tile.coverage_per_box || '',
     use_case: tile.use_case || '',
     description: tile.description || '',
+    is_mix: tile.is_mix,
   });
 
   return (
@@ -291,6 +327,16 @@ function EditTileModal({
                 <label className="block text-sm font-medium mb-1">Category</label>
                 <input type="text" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" />
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is_mix"
+                checked={form.is_mix}
+                onChange={(e) => setForm({ ...form, is_mix: e.target.checked })}
+                className="rounded border-gray-300"
+              />
+              <label htmlFor="is_mix" className="text-sm font-medium">Mixed/Temporary Bin</label>
             </div>
             <fieldset className="border rounded p-3 space-y-2">
               <legend className="text-xs font-semibold px-1">Specifications</legend>

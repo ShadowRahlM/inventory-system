@@ -34,7 +34,7 @@ export const INVENTORY_KEYS = {
 export function useTilesList() {
   return useQuery({
     queryKey: INVENTORY_KEYS.tiles(),
-    queryFn: () => inventoryApi.tiles.list(),
+    queryFn: () => inventoryApi.tiles.list({ page_size: 5000 }),
   });
 }
 
@@ -47,22 +47,22 @@ export function useBatchesList() {
 
 export function useStockList() {
   return useQuery({
-    queryKey: INVENTORY_KEYS.stock(),
-    queryFn: () => inventoryApi.stock.list(),
+    queryKey: [...INVENTORY_KEYS.stock(), { page_size: 5000 }],
+    queryFn: () => inventoryApi.stock.list({ page_size: 5000 }),
   });
 }
 
 export function useMovementsList() {
   return useQuery({
-    queryKey: INVENTORY_KEYS.movements(),
-    queryFn: () => inventoryApi.movements.list(),
+    queryKey: [...INVENTORY_KEYS.movements(), { page_size: 5000 }],
+    queryFn: () => inventoryApi.movements.list({ page_size: 5000 }),
   });
 }
 
 export function useAuditLogsList() {
   return useQuery({
-    queryKey: INVENTORY_KEYS.auditLogs(),
-    queryFn: () => inventoryApi.auditLogs.list(),
+    queryKey: [...INVENTORY_KEYS.auditLogs(), { page_size: 5000 }],
+    queryFn: () => inventoryApi.auditLogs.list({ page_size: 5000 }),
   });
 }
 
@@ -124,28 +124,28 @@ export function useTransferInventory() {
 export function useCustomersList() {
   return useQuery({
     queryKey: INVENTORY_KEYS.customers(),
-    queryFn: () => inventoryApi.customers.list(),
+    queryFn: () => inventoryApi.customers.list({ page_size: 5000 }),
   });
 }
 
 export function useSuppliersList() {
   return useQuery({
     queryKey: INVENTORY_KEYS.suppliers(),
-    queryFn: () => inventoryApi.suppliers.list(),
+    queryFn: () => inventoryApi.suppliers.list({ page_size: 5000 }),
   });
 }
 
 export function useSalesOrdersList() {
   return useQuery({
-    queryKey: INVENTORY_KEYS.salesOrders(),
-    queryFn: () => inventoryApi.salesOrders.list(),
+    queryKey: [...INVENTORY_KEYS.salesOrders(), { page_size: 5000 }],
+    queryFn: () => inventoryApi.salesOrders.list({ page_size: 5000 }),
   });
 }
 
 export function usePurchaseOrdersList() {
   return useQuery({
-    queryKey: INVENTORY_KEYS.purchaseOrders(),
-    queryFn: () => inventoryApi.purchaseOrders.list(),
+    queryKey: [...INVENTORY_KEYS.purchaseOrders(), { page_size: 5000 }],
+    queryFn: () => inventoryApi.purchaseOrders.list({ page_size: 5000 }),
   });
 }
 
@@ -211,6 +211,28 @@ export function useCancelSalesOrder() {
   });
 }
 
+export function useConfirmPurchaseOrder() {
+  const queryClient = useQueryClient();
+  return useMutation<PurchaseOrder, Error, string>({
+    mutationFn: (orderId) => inventoryApi.orderOperations.confirmPurchaseOrder(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.purchaseOrders() });
+    },
+  });
+}
+
+export function useReceivePurchaseOrder() {
+  const queryClient = useQueryClient();
+  return useMutation<PurchaseOrder, Error, string>({
+    mutationFn: (orderId) => inventoryApi.orderOperations.receivePurchaseOrder(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.purchaseOrders() });
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.stock() });
+      queryClient.invalidateQueries({ queryKey: INVENTORY_KEYS.movements() });
+    },
+  });
+}
+
 export function useMarkNotificationsRead() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -233,8 +255,8 @@ export function useMarkAllNotificationsRead() {
 
 export function useSyncConflictsList() {
   return useQuery({
-    queryKey: INVENTORY_KEYS.syncConflicts(),
-    queryFn: () => inventoryApi.syncConflicts.list(),
+    queryKey: [...INVENTORY_KEYS.syncConflicts(), { page_size: 5000 }],
+    queryFn: () => inventoryApi.syncConflicts.list({ page_size: 5000 }),
   });
 }
 

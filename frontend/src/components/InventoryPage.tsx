@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ReceiveInventoryForm } from './InventoryForm';
 import { DispatchForm } from './DispatchForm';
 import { AdjustForm } from './AdjustForm';
@@ -8,6 +9,13 @@ import { useStockList, useMovementsList, useAuditLogsList } from '../hooks/useIn
 type Tab = 'Stock View' | 'Receive' | 'Dispatch' | 'Adjust' | 'Transfer' | 'Movements' | 'Audit Logs';
 
 const tabs: Tab[] = ['Stock View', 'Receive', 'Dispatch', 'Adjust', 'Transfer', 'Movements', 'Audit Logs'];
+
+const tabForPath: Record<string, Tab> = {
+  '/inventory': 'Stock View',
+  '/batches': 'Stock View',
+  '/movements': 'Movements',
+  '/audit-logs': 'Audit Logs',
+};
 
 function StockView() {
   const { data, isLoading, error } = useStockList();
@@ -150,7 +158,15 @@ const tabComponents: Record<Tab, React.ReactNode> = {
 };
 
 export function InventoryPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('Stock View');
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<Tab>(
+    () => tabForPath[location.pathname] ?? 'Stock View'
+  );
+
+  useEffect(() => {
+    const tab = tabForPath[location.pathname];
+    if (tab) setActiveTab(tab);
+  }, [location.pathname]);
 
   return (
     <div className="p-6">

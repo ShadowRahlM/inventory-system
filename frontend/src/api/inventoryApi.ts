@@ -29,6 +29,7 @@ import type {
   CreateSalesOrderPayload,
   CreatePurchaseOrderPayload,
   SyncConflict,
+  StockTakeResult,
 } from '../types/inventory';
 
 function extractData<T>(response: { data: ApiResponse<T> }): T {
@@ -40,7 +41,7 @@ function extractData<T>(response: { data: ApiResponse<T> }): T {
 
 export const inventoryApi = {
   tiles: {
-    list: (params?: { search?: string }) =>
+    list: (params?: Record<string, string | number | undefined>) =>
       api.get<PaginatedResponse<TileProduct>>('/inventory/tiles/', { params }).then(r => r.data),
     create: (data: Partial<TileProduct>) =>
       api.post<TileProduct>('/inventory/tiles/', data).then(r => r.data),
@@ -66,8 +67,8 @@ export const inventoryApi = {
   },
 
   stock: {
-    list: () =>
-      api.get<PaginatedResponse<StockLevel>>('/inventory/inventory/').then(r => r.data),
+    list: (params?: Record<string, unknown>) =>
+      api.get<PaginatedResponse<StockLevel>>('/inventory/inventory/', { params }).then(r => r.data),
     get: (id: string) =>
       api.get<StockLevel>(`/inventory/inventory/${id}/`).then(r => r.data),
     available: (tileId: string) =>
@@ -77,22 +78,22 @@ export const inventoryApi = {
   },
 
   movements: {
-    list: () =>
-      api.get<PaginatedResponse<MovementRecord>>('/inventory/movements/').then(r => r.data),
+    list: (params?: Record<string, unknown>) =>
+      api.get<PaginatedResponse<MovementRecord>>('/inventory/movements/', { params }).then(r => r.data),
     get: (id: string) =>
       api.get<MovementRecord>(`/inventory/movements/${id}/`).then(r => r.data),
   },
 
   auditLogs: {
-    list: () =>
-      api.get<PaginatedResponse<AuditLogEntry>>('/inventory/audit-logs/').then(r => r.data),
+    list: (params?: Record<string, unknown>) =>
+      api.get<PaginatedResponse<AuditLogEntry>>('/inventory/audit-logs/', { params }).then(r => r.data),
     get: (id: string) =>
       api.get<AuditLogEntry>(`/inventory/audit-logs/${id}/`).then(r => r.data),
   },
 
   catalogs: {
-    list: () =>
-      api.get<PaginatedResponse<TileCatalog>>('/inventory/catalogs/').then(r => r.data),
+    list: (params?: Record<string, unknown>) =>
+      api.get<PaginatedResponse<TileCatalog>>('/inventory/catalogs/', { params }).then(r => r.data),
     get: (id: string) =>
       api.get<TileCatalog>(`/inventory/catalogs/${id}/`).then(r => r.data),
     create: (data: { name: string; description?: string; json_data: Record<string, unknown> }) =>
@@ -106,8 +107,8 @@ export const inventoryApi = {
   },
 
   users: {
-    list: () =>
-      api.get<PaginatedResponse<UserRecord>>('/inventory/users/').then(r => r.data),
+    list: (params?: Record<string, unknown>) =>
+      api.get<PaginatedResponse<UserRecord>>('/inventory/users/', { params }).then(r => r.data),
     get: (id: number) =>
       api.get<UserRecord>(`/inventory/users/${id}/`).then(r => r.data),
     create: (data: Partial<UserRecord> & { password?: string }) =>
@@ -136,11 +137,13 @@ export const inventoryApi = {
       api.post<ApiResponse<AdjustResult>>('/inventory/operations/adjust/', payload).then(extractData),
     transfer: (payload: TransferPayload) =>
       api.post<ApiResponse<TransferResult>>('/inventory/operations/transfer/', payload).then(extractData),
+    stockTake: (payload: { data: Record<string, unknown> }) =>
+      api.post<ApiResponse<StockTakeResult>>('/inventory/operations/stock_take/', payload).then(extractData),
   },
 
   customers: {
-    list: () =>
-      api.get<PaginatedResponse<Customer>>('/inventory/customers/').then(r => r.data),
+    list: (params?: Record<string, string | number | undefined>) =>
+      api.get<PaginatedResponse<Customer>>('/inventory/customers/', { params }).then(r => r.data),
     create: (data: Partial<Customer>) =>
       api.post<Customer>('/inventory/customers/', data).then(r => r.data),
     get: (id: string) =>
@@ -152,8 +155,8 @@ export const inventoryApi = {
   },
 
   suppliers: {
-    list: () =>
-      api.get<PaginatedResponse<Supplier>>('/inventory/suppliers/').then(r => r.data),
+    list: (params?: Record<string, string | number | undefined>) =>
+      api.get<PaginatedResponse<Supplier>>('/inventory/suppliers/', { params }).then(r => r.data),
     create: (data: Partial<Supplier>) =>
       api.post<Supplier>('/inventory/suppliers/', data).then(r => r.data),
     get: (id: string) =>
@@ -165,15 +168,15 @@ export const inventoryApi = {
   },
 
   salesOrders: {
-    list: () =>
-      api.get<PaginatedResponse<SalesOrder>>('/inventory/sales-orders/').then(r => r.data),
+    list: (params?: Record<string, unknown>) =>
+      api.get<PaginatedResponse<SalesOrder>>('/inventory/sales-orders/', { params }).then(r => r.data),
     get: (id: string) =>
       api.get<SalesOrder>(`/inventory/sales-orders/${id}/`).then(r => r.data),
   },
 
   purchaseOrders: {
-    list: () =>
-      api.get<PaginatedResponse<PurchaseOrder>>('/inventory/purchase-orders/').then(r => r.data),
+    list: (params?: Record<string, unknown>) =>
+      api.get<PaginatedResponse<PurchaseOrder>>('/inventory/purchase-orders/', { params }).then(r => r.data),
     get: (id: string) =>
       api.get<PurchaseOrder>(`/inventory/purchase-orders/${id}/`).then(r => r.data),
   },
@@ -205,8 +208,8 @@ export const inventoryApi = {
   },
 
   syncConflicts: {
-    list: () =>
-      api.get<PaginatedResponse<SyncConflict>>('/inventory/sync-conflicts/').then(r => r.data),
+    list: (params?: Record<string, unknown>) =>
+      api.get<PaginatedResponse<SyncConflict>>('/inventory/sync-conflicts/', { params }).then(r => r.data),
     resolve: (id: string, resolution: 'local' | 'remote') =>
       api.post<SyncConflict>(`/inventory/sync-conflicts/${id}/resolve/`, { resolution }).then(r => r.data),
   },

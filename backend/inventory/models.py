@@ -33,6 +33,7 @@ class Tile(models.Model):
     thickness = models.CharField(max_length=50, blank=True, help_text="e.g. 8-10mm")
     coverage_per_box = models.CharField(max_length=100, blank=True, help_text="e.g. 1.92 sqm per box")
     use_case = models.CharField(max_length=200, blank=True, help_text="e.g. Living rooms, bedrooms")
+    is_mix = models.BooleanField(default=False, help_text="Mixed/temporary bin entry, not a standard product")
     image = models.ImageField(upload_to='tiles/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -146,7 +147,7 @@ class Movement(models.Model):
 
 class AuditLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    movement = models.ForeignKey(Movement, on_delete=models.CASCADE, related_name='audit_logs')
+    movement = models.ForeignKey(Movement, on_delete=models.CASCADE, related_name='audit_logs', null=True, blank=True)
     action = models.CharField(max_length=100)
     old_values = models.JSONField(default=dict)
     new_values = models.JSONField(default=dict)

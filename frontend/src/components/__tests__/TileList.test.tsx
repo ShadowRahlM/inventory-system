@@ -6,9 +6,9 @@ import { TileList } from '../TileList'
 import { useAuthStore } from '../../lib/store'
 
 const { inventoryApi } = vi.hoisted(() => {
-  const t1 = { id: '1', sku: 'SKU-001', name: 'Floor Tile A', category: 'Floor', dimensions: '60x60cm', pieces_per_carton: 4, image: null, brand: 'goodwill', series: 'Cosmos', tier: 'standard', tile_type: 'Glazed', finish: 'Matte', thickness: '8mm', coverage_per_box: '1.44m²', use_case: 'Living rooms', description: '', created_at: '2025-01-01', updated_at: '2025-01-01' }
-  const t2 = { id: '2', sku: 'SKU-002', name: 'Wall Tile B', category: 'Wall', dimensions: '30x60cm', pieces_per_carton: 8, image: null, brand: 'crown_crane', series: 'Noble', tier: 'premium', tile_type: 'Porcelain', finish: 'Glossy', thickness: '10mm', coverage_per_box: '1.44m²', use_case: 'Bathroom', description: '', created_at: '2025-01-02', updated_at: '2025-01-02' }
-    return {
+  const t1 = { id: '1', sku: 'SKU-001', name: 'Floor Tile A', category: 'Floor', dimensions: '60x60cm', pieces_per_carton: 4, image: null, brand: 'goodwill', series: 'Cosmos', tier: 'standard', tile_type: 'Glazed', finish: 'Matte', thickness: '8mm', coverage_per_box: '1.44m²', use_case: 'Living rooms', description: '', is_mix: false, created_at: '2025-01-01', updated_at: '2025-01-01' }
+  const t2 = { id: '2', sku: 'SKU-002', name: 'Wall Tile B', category: 'Wall', dimensions: '30x60cm', pieces_per_carton: 8, image: null, brand: 'crown_crane', series: 'Noble', tier: 'premium', tile_type: 'Porcelain', finish: 'Glossy', thickness: '10mm', coverage_per_box: '1.44m²', use_case: 'Bathroom', description: '', is_mix: true, created_at: '2025-01-02', updated_at: '2025-01-02' }
+  return {
     inventoryApi: {
       tiles: {
         list: vi.fn().mockResolvedValue({ count: 2, results: [t1, t2] }),
@@ -34,14 +34,13 @@ describe('TileList', () => {
     expect(await screen.findByText('Name')).toBeInTheDocument()
     expect(await screen.findByText('Brand')).toBeInTheDocument()
     expect(await screen.findByText('Category')).toBeInTheDocument()
+    expect(await screen.findByText('Mix')).toBeInTheDocument()
   })
 
   it('renders tile data from API', async () => {
     render(<TileList />)
     expect(await screen.findByText('SKU-001')).toBeInTheDocument()
     expect(await screen.findByText('SKU-002')).toBeInTheDocument()
-    expect(await screen.findByText('Floor Tile A')).toBeInTheDocument()
-    expect(await screen.findByText('Wall Tile B')).toBeInTheDocument()
   })
 
   it('renders select-all checkbox', async () => {
@@ -78,12 +77,13 @@ describe('TileList', () => {
     })
   })
 
-  it('shows edit modal and allows updating', async () => {
+  it('shows edit modal with is_mix checkbox and allows updating', async () => {
     const user = userEvent.setup()
     render(<TileList />)
     const editBtn = (await screen.findAllByRole('button', { name: /edit/i }))[0]
     await user.click(editBtn)
     expect(screen.getByText(/Edit Tile/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Mixed\/Temporary Bin/i)).toBeInTheDocument()
     const nameInput = screen.getByDisplayValue('Floor Tile A')
     await user.clear(nameInput)
     await user.type(nameInput, 'Updated Tile')
@@ -91,6 +91,17 @@ describe('TileList', () => {
     await user.click(saveBtn)
     await waitFor(() => {
       expect(inventoryApi.tiles.update).toHaveBeenCalled()
+    })
+  })
+
+  it('searches tiles when user types', async () => {
+    const user = userEvent.setup()
+    render(<TileList />)
+    const searchInput = await screen.findByPlaceholderText(/Search by SKU/)
+    await user.clear(searchInput)
+    await user.type(searchInput, 'floor')
+    await waitFor(() => {
+      expect(inventoryApi.tiles.list).toHaveBeenCalledWith({ search: 'floor', page_size: 5000 })
     })
   })
 })

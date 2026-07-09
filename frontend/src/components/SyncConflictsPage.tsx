@@ -99,11 +99,12 @@ function ConflictCard({ conflict }: { conflict: SyncConflict }) {
 }
 
 export function SyncConflictsPage() {
-  const { data, isLoading } = useSyncConflictsList();
+  const { data, isLoading, isError } = useSyncConflictsList();
   const conflicts = data?.results ?? [];
   const unresolved = conflicts.filter(c => !c.resolved);
 
   if (isLoading) return <div className="p-6 text-gray-500">Loading sync conflicts...</div>;
+  if (isError) return <div className="p-6 text-red-500">Failed to load sync conflicts</div>;
 
   return (
     <div className="p-6">

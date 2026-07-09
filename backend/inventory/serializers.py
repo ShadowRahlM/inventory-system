@@ -242,3 +242,7 @@ class SyncConflictSerializer(serializers.ModelSerializer):
         model = SyncConflict
         fields = '__all__'
         read_only_fields = ['id', 'created_at']
+
+
+class StockTakeSerializer(serializers.Serializer):
+    data = serializers.JSONField()

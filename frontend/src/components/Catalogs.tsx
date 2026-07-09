@@ -71,8 +71,8 @@ export function Catalogs() {
   const [dedupPending, setDedupPending] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: [...INVENTORY_KEYS.all, 'catalogs'],
-    queryFn: () => inventoryApi.catalogs.list(),
+    queryKey: [...INVENTORY_KEYS.all, 'catalogs', { page_size: 5000 }],
+    queryFn: () => inventoryApi.catalogs.list({ page_size: 5000 }),
   });
 
   const createMutation = useMutation({

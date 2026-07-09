@@ -107,8 +107,8 @@ export function UserManagement() {
   const isAdmin = currentUser?.role === 'admin';
 
   const { data, isLoading, error } = useQuery({
-    queryKey: INVENTORY_KEYS.users(),
-    queryFn: () => inventoryApi.users.list(),
+    queryKey: [...INVENTORY_KEYS.users(), { page_size: 5000 }],
+    queryFn: () => inventoryApi.users.list({ page_size: 5000 }),
   });
 
   const queryClient = useQueryClient();

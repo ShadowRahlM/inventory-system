@@ -17,6 +17,7 @@ import { OrdersPage } from './components/OrdersPage';
 import { CustomerSupplierPage } from './components/CustomerSupplierPage';
 import { NotificationsPage } from './components/NotificationsPage';
 import { SyncConflictsPage } from './components/SyncConflictsPage';
+import { StockTake } from './components/StockTake';
 import { Register } from './components/Register';
 import { useSessionTimeout, initSession, getRedirectPath, clearRedirectPath } from './lib/useSessionTimeout';
 
@@ -155,6 +156,11 @@ function App() {
                 <Route path="/audit-logs" element={
                   <ProtectedRoute>
                     <InventoryPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/stock-take" element={
+                  <ProtectedRoute>
+                    <StockTake />
                   </ProtectedRoute>
                 } />
                 <Route path="/catalogs" element={

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { inventoryApi } from '../api/inventoryApi';
+import { useSalesOrdersList, usePurchaseOrdersList } from '../hooks/useInventoryQueries';
 import { INVENTORY_KEYS } from '../hooks/useInventoryQueries';
 import type { TileProduct } from '../types/inventory';
 import { LowStockAlerts } from './LowStockAlerts';
+import { Link } from 'react-router-dom';
 
 export function Dashboard() {
   const [search, setSearch] = useState('');
 
-  const { data: tiles } = useQuery({
+  const { data: tiles, isLoading: tilesLoading } = useQuery({
     queryKey: INVENTORY_KEYS.tiles(),
     queryFn: () => inventoryApi.tiles.list(),
   });
@@ -19,44 +21,107 @@ export function Dashboard() {
     enabled: search.trim().length > 0,
   });
 
+  const { data: stockSummary, isLoading: stockLoading, isError: stockError } = useQuery({
+    queryKey: [...INVENTORY_KEYS.stock(), 'summary'],
+    queryFn: () => inventoryApi.reports.stockSummary(),
+  });
+
   const { data: inventory } = useQuery({
     queryKey: INVENTORY_KEYS.stock(),
     queryFn: () => inventoryApi.stock.list(),
   });
 
-  const filteredTiles = searchResults?.results ?? [];
+  const { data: salesOrders, isLoading: salesLoading } = useSalesOrdersList();
+  const { data: purchaseOrders, isLoading: poLoading } = usePurchaseOrdersList();
 
-  const totalTiles = tiles?.count ?? 0;
-  const totalInventoryItems = inventory?.count ?? 0;
-  const totalPieces = inventory?.results?.reduce(
-    (sum: number, item: any) => sum + item.total_pieces, 0
-  ) ?? 0;
+  const filteredTiles = searchResults?.results ?? [];
+  const totalTiles = stockSummary?.total_tiles ?? tiles?.count ?? 0;
+  const totalPieces = stockSummary?.total_pieces ?? 0;
+
+  const pendingSales = (salesOrders?.results ?? []).filter(
+    (o) => o.status === 'DRAFT' || o.status === 'CONFIRMED'
+  ).length;
+  const pendingPOs = (purchaseOrders?.results ?? []).filter(
+    (o) => o.status === 'DRAFT' || o.status === 'CONFIRMED'
+  ).length;
+
+  function SummaryCard({ title, value, color, isLoading, error }: {
+    title: string; value: string | number; color: string; isLoading?: boolean; error?: boolean;
+  }) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow border">
+        <h3 className="text-lg font-semibold mb-2">{title}</h3>
+        {isLoading ? (
+          <div className="h-10 w-24 bg-gray-200 animate-pulse rounded" />
+        ) : error ? (
+          <p className="text-sm text-red-500">Failed to load</p>
+        ) : (
+          <p className={`text-4xl font-bold ${color}`}>{value}</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-semibold mb-2">Total Tiles</h3>
-          <p className="text-4xl font-bold text-blue-600">{totalTiles}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-semibold mb-2">Inventory Items</h3>
-          <p className="text-4xl font-bold text-green-600">{totalInventoryItems}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-semibold mb-2">Total Pieces</h3>
-          <p className="text-4xl font-bold text-purple-600">{totalPieces}</p>
-        </div>
+        <SummaryCard
+          title="Total Tiles"
+          value={totalTiles}
+          color="text-blue-600"
+          isLoading={tilesLoading}
+        />
+        <SummaryCard
+          title="Total Stock Items"
+          value={stockSummary?.total_batches ?? '-'}
+          color="text-green-600"
+          isLoading={stockLoading}
+          error={stockError}
+        />
+        <SummaryCard
+          title="Total Pieces"
+          value={totalPieces}
+          color="text-purple-600"
+          isLoading={stockLoading}
+          error={stockError}
+        />
       </div>
 
-      {/* Low Stock Alerts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <Link to="/orders" className="block">
+          <div className="bg-white p-6 rounded-lg shadow border hover:shadow-md transition-shadow">
+            <h3 className="text-lg font-semibold mb-2">Pending Sales Orders</h3>
+            {salesLoading ? (
+              <div className="h-10 w-16 bg-gray-200 animate-pulse rounded" />
+            ) : (
+              <p className={`text-4xl font-bold ${pendingSales > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                {pendingSales}
+              </p>
+            )}
+            <p className="text-sm text-gray-500 mt-1">DRAFT + CONFIRMED</p>
+          </div>
+        </Link>
+        <Link to="/orders" className="block">
+          <div className="bg-white p-6 rounded-lg shadow border hover:shadow-md transition-shadow">
+            <h3 className="text-lg font-semibold mb-2">Pending Purchase Orders</h3>
+            {poLoading ? (
+              <div className="h-10 w-16 bg-gray-200 animate-pulse rounded" />
+            ) : (
+              <p className={`text-4xl font-bold ${pendingPOs > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                {pendingPOs}
+              </p>
+            )}
+            <p className="text-sm text-gray-500 mt-1">DRAFT + CONFIRMED</p>
+          </div>
+        </Link>
+      </div>
+
       <div className="mb-8">
         <LowStockAlerts compact />
       </div>
 
-      {/* Tile Search */}
       <div className="bg-white p-6 rounded-lg shadow border mb-8">
         <div className="flex items-center gap-4 mb-4">
           <h2 className="text-xl font-semibold">Search Tiles</h2>
@@ -114,35 +179,44 @@ export function Dashboard() {
         )}
       </div>
 
-      {/* Recent Inventory */}
       <div className="bg-white p-6 rounded-lg shadow border">
         <h2 className="text-xl font-semibold mb-4">Recent Inventory Items</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2">Tile</th>
-                <th className="text-left py-2">Batch</th>
-                <th className="text-left py-2">Location</th>
-                <th className="text-left py-2">Cartons</th>
-                <th className="text-left py-2">Loose Pieces</th>
-                <th className="text-left py-2">Total Pieces</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventory?.results?.slice(0, 5).map((item: any) => (
-                <tr key={item.id} className="border-b">
-                  <td className="py-2">{item.tile_sku}</td>
-                  <td className="py-2">{item.batch_number}</td>
-                  <td className="py-2">{item.location}</td>
-                  <td className="py-2">{item.cartons}</td>
-                  <td className="py-2">{item.loose_pieces}</td>
-                  <td className="py-2">{item.total_pieces}</td>
+        {stockLoading ? (
+          <div className="space-y-2">
+            {[1,2,3].map(i => <div key={i} className="h-8 bg-gray-100 animate-pulse rounded" />)}
+          </div>
+        ) : stockError ? (
+          <p className="text-red-500 text-sm py-4 text-center">Failed to load inventory data</p>
+        ) : !inventory?.results?.length ? (
+          <p className="text-gray-500 text-sm py-4 text-center">No inventory data yet</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2">Tile</th>
+                  <th className="text-left py-2">Batch</th>
+                  <th className="text-left py-2">Location</th>
+                  <th className="text-left py-2">Cartons</th>
+                  <th className="text-left py-2">Loose Pieces</th>
+                  <th className="text-left py-2">Total Pieces</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {inventory?.results?.slice(0, 5).map((item: any) => (
+                  <tr key={item.id} className="border-b hover:bg-gray-50">
+                    <td className="py-2">{item.tile_sku}</td>
+                    <td className="py-2">{item.batch_number}</td>
+                    <td className="py-2">{item.location}</td>
+                    <td className="py-2">{item.cartons}</td>
+                    <td className="py-2">{item.loose_pieces}</td>
+                    <td className="py-2 font-medium">{item.total_pieces}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

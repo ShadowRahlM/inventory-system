@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useCallback } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -13,8 +13,11 @@ import {
   useConfirmSalesOrder,
   useShipSalesOrder,
   useCancelSalesOrder,
+  useConfirmPurchaseOrder,
+  useReceivePurchaseOrder,
 } from '../hooks/useInventoryQueries';
-import type { SalesOrder, OrderStatus } from '../types/inventory';
+import type { SalesOrder, PurchaseOrder as PurchaseOrderType, OrderStatus } from '../types/inventory';
+import { SearchableSelect } from './SearchableSelect';
 
 type Tab = 'Sales Orders' | 'Purchase Orders' | 'New Sales Order' | 'New Purchase Order';
 const tabs: Tab[] = ['Sales Orders', 'Purchase Orders', 'New Sales Order', 'New Purchase Order'];
@@ -38,15 +41,17 @@ function SalesOrderActions({ order }: { order: SalesOrder }) {
         <>
           <button
             onClick={() => confirmMutation.mutate(order.id)}
-            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+            disabled={confirmMutation.isPending}
+            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            Confirm
+            {confirmMutation.isPending ? '...' : 'Confirm'}
           </button>
           <button
             onClick={() => cancelMutation.mutate(order.id)}
-            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+            disabled={cancelMutation.isPending}
+            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
           >
-            Cancel
+            {cancelMutation.isPending ? '...' : 'Cancel'}
           </button>
         </>
       )}
@@ -54,17 +59,47 @@ function SalesOrderActions({ order }: { order: SalesOrder }) {
         <>
           <button
             onClick={() => shipMutation.mutate(order.id)}
-            className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
+            disabled={shipMutation.isPending}
+            className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
           >
-            Ship
+            {shipMutation.isPending ? '...' : 'Ship'}
           </button>
           <button
             onClick={() => cancelMutation.mutate(order.id)}
-            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+            disabled={cancelMutation.isPending}
+            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
           >
-            Cancel
+            {cancelMutation.isPending ? '...' : 'Cancel'}
           </button>
         </>
+      )}
+    </div>
+  );
+}
+
+function PurchaseOrderActions({ order }: { order: PurchaseOrderType }) {
+  const confirmMutation = useConfirmPurchaseOrder();
+  const receiveMutation = useReceivePurchaseOrder();
+
+  return (
+    <div className="flex gap-1">
+      {order.status === 'DRAFT' && (
+        <button
+          onClick={() => confirmMutation.mutate(order.id)}
+          disabled={confirmMutation.isPending}
+          className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {confirmMutation.isPending ? '...' : 'Confirm'}
+        </button>
+      )}
+      {order.status === 'CONFIRMED' && (
+        <button
+          onClick={() => receiveMutation.mutate(order.id)}
+          disabled={receiveMutation.isPending}
+          className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+        >
+          {receiveMutation.isPending ? '...' : 'Receive'}
+        </button>
       )}
     </div>
   );
@@ -125,11 +160,12 @@ function PurchaseOrdersView() {
             <th className="text-left py-2">Order Date</th>
             <th className="text-left py-2">Expected</th>
             <th className="text-left py-2">Notes</th>
+            <th className="text-left py-2">Actions</th>
           </tr>
         </thead>
         <tbody>
           {orders.length === 0 ? (
-            <tr><td colSpan={6} className="text-center py-8 text-gray-400">No purchase orders</td></tr>
+            <tr><td colSpan={7} className="text-center py-8 text-gray-400">No purchase orders</td></tr>
           ) : orders.map((order) => (
             <tr key={order.id} className="border-b hover:bg-gray-50">
               <td className="py-2 font-medium">{order.order_number}</td>
@@ -144,6 +180,7 @@ function PurchaseOrdersView() {
                 {order.expected_date ? new Date(order.expected_date).toLocaleDateString() : '-'}
               </td>
               <td className="py-2 text-sm text-gray-500 truncate max-w-[200px]">{order.notes || '-'}</td>
+              <td className="py-2"><PurchaseOrderActions order={order} /></td>
             </tr>
           ))}
         </tbody>
@@ -165,17 +202,21 @@ function NewSalesOrderForm() {
   const { data: customers } = useCustomersList();
   const { data: tiles } = useTilesList();
   const createMutation = useCreateSalesOrder();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { control, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(createSalesOrderSchema),
+    defaultValues: { customer_id: '', tile_id: '', cartons: 0, loose_pieces: 0, unit_price: 0, notes: '' },
   });
 
-  const onSubmit = (data: any) => {
+  const onSubmit = useCallback((data: any) => {
     createMutation.mutate({
       customer_id: data.customer_id,
       notes: data.notes,
       items: [{ tile_id: data.tile_id, cartons: data.cartons, loose_pieces: data.loose_pieces, unit_price: data.unit_price }],
     }, { onSuccess: () => reset() });
-  };
+  }, [createMutation, reset]);
+
+  const customerOptions = (customers?.results ?? []).map((c: any) => ({ value: c.id, label: c.name }));
+  const tileOptions = (tiles?.results ?? []).map((t: any) => ({ value: t.id, label: `${t.sku} — ${t.name}` }));
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-md">
@@ -190,43 +231,61 @@ function NewSalesOrderForm() {
           Sales order created!
         </div>
       )}
-      <div>
-        <label className="block mb-1">Customer</label>
-        <select {...register('customer_id')} className="w-full border rounded px-3 py-2">
-          <option value="">Select customer...</option>
-          {customers?.results?.map((c: any) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-        {errors.customer_id && <span className="text-red-500 text-sm">{errors.customer_id.message as string}</span>}
-      </div>
-      <div>
-        <label className="block mb-1">Tile</label>
-        <select {...register('tile_id')} className="w-full border rounded px-3 py-2">
-          <option value="">Select tile...</option>
-          {tiles?.results?.map((t: any) => (
-            <option key={t.id} value={t.id}>{t.sku} - {t.name}</option>
-          ))}
-        </select>
-        {errors.tile_id && <span className="text-red-500 text-sm">{errors.tile_id.message as string}</span>}
-      </div>
+      <Controller
+        name="customer_id"
+        control={control}
+        render={({ field }) => (
+          <SearchableSelect
+            label="Customer"
+            options={customerOptions}
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            placeholder="Search customer..."
+            error={errors.customer_id?.message as string}
+          />
+        )}
+      />
+      <Controller
+        name="tile_id"
+        control={control}
+        render={({ field }) => (
+          <SearchableSelect
+            label="Tile"
+            options={tileOptions}
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            placeholder="Search tile..."
+            error={errors.tile_id?.message as string}
+          />
+        )}
+      />
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block mb-1">Cartons</label>
-          <input {...register('cartons')} type="number" className="w-full border rounded px-3 py-2" />
+          <label className="block mb-1 text-sm font-medium text-gray-700">Cartons</label>
+          <Controller name="cartons" control={control} render={({ field }) => (
+            <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" className="w-full border rounded px-3 py-2 text-sm" />
+          )} />
         </div>
         <div>
-          <label className="block mb-1">Loose Pieces</label>
-          <input {...register('loose_pieces')} type="number" className="w-full border rounded px-3 py-2" />
+          <label className="block mb-1 text-sm font-medium text-gray-700">Loose Pieces</label>
+          <Controller name="loose_pieces" control={control} render={({ field }) => (
+            <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" className="w-full border rounded px-3 py-2 text-sm" />
+          )} />
         </div>
       </div>
       <div>
-        <label className="block mb-1">Unit Price ($)</label>
-        <input {...register('unit_price')} type="number" step="0.01" className="w-full border rounded px-3 py-2" />
+        <label className="block mb-1 text-sm font-medium text-gray-700">Unit Price ($)</label>
+        <Controller name="unit_price" control={control} render={({ field }) => (
+          <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" step="0.01" className="w-full border rounded px-3 py-2 text-sm" />
+        )} />
       </div>
       <div>
-        <label className="block mb-1">Notes</label>
-        <textarea {...register('notes')} className="w-full border rounded px-3 py-2" rows={2} />
+        <label className="block mb-1 text-sm font-medium text-gray-700">Notes</label>
+        <Controller name="notes" control={control} render={({ field }) => (
+          <textarea value={field.value as string} onChange={field.onChange} onBlur={field.onBlur} className="w-full border rounded px-3 py-2 text-sm" rows={2} />
+        )} />
       </div>
       <button type="submit" disabled={createMutation.isPending}
         className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">
@@ -250,18 +309,22 @@ function NewPurchaseOrderForm() {
   const { data: suppliers } = useSuppliersList();
   const { data: tiles } = useTilesList();
   const createMutation = useCreatePurchaseOrder();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { control, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(createPurchaseOrderSchema),
+    defaultValues: { supplier_id: '', tile_id: '', cartons: 0, loose_pieces: 0, unit_price: 0, expected_date: '', notes: '' },
   });
 
-  const onSubmit = (data: any) => {
+  const onSubmit = useCallback((data: any) => {
     createMutation.mutate({
       supplier_id: data.supplier_id,
       expected_date: data.expected_date || undefined,
       notes: data.notes,
       items: [{ tile_id: data.tile_id, cartons: data.cartons, loose_pieces: data.loose_pieces, unit_price: data.unit_price }],
     }, { onSuccess: () => reset() });
-  };
+  }, [createMutation, reset]);
+
+  const supplierOptions = (suppliers?.results ?? []).map((s: any) => ({ value: s.id, label: s.name }));
+  const tileOptions = (tiles?.results ?? []).map((t: any) => ({ value: t.id, label: `${t.sku} — ${t.name}` }));
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-md">
@@ -276,47 +339,67 @@ function NewPurchaseOrderForm() {
           Purchase order created!
         </div>
       )}
-      <div>
-        <label className="block mb-1">Supplier</label>
-        <select {...register('supplier_id')} className="w-full border rounded px-3 py-2">
-          <option value="">Select supplier...</option>
-          {suppliers?.results?.map((s: any) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
-        {errors.supplier_id && <span className="text-red-500 text-sm">{errors.supplier_id.message as string}</span>}
-      </div>
-      <div>
-        <label className="block mb-1">Tile</label>
-        <select {...register('tile_id')} className="w-full border rounded px-3 py-2">
-          <option value="">Select tile...</option>
-          {tiles?.results?.map((t: any) => (
-            <option key={t.id} value={t.id}>{t.sku} - {t.name}</option>
-          ))}
-        </select>
-        {errors.tile_id && <span className="text-red-500 text-sm">{errors.tile_id.message as string}</span>}
-      </div>
+      <Controller
+        name="supplier_id"
+        control={control}
+        render={({ field }) => (
+          <SearchableSelect
+            label="Supplier"
+            options={supplierOptions}
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            placeholder="Search supplier..."
+            error={errors.supplier_id?.message as string}
+          />
+        )}
+      />
+      <Controller
+        name="tile_id"
+        control={control}
+        render={({ field }) => (
+          <SearchableSelect
+            label="Tile"
+            options={tileOptions}
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            placeholder="Search tile..."
+            error={errors.tile_id?.message as string}
+          />
+        )}
+      />
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block mb-1">Cartons</label>
-          <input {...register('cartons')} type="number" className="w-full border rounded px-3 py-2" />
+          <label className="block mb-1 text-sm font-medium text-gray-700">Cartons</label>
+          <Controller name="cartons" control={control} render={({ field }) => (
+            <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" className="w-full border rounded px-3 py-2 text-sm" />
+          )} />
         </div>
         <div>
-          <label className="block mb-1">Loose Pieces</label>
-          <input {...register('loose_pieces')} type="number" className="w-full border rounded px-3 py-2" />
+          <label className="block mb-1 text-sm font-medium text-gray-700">Loose Pieces</label>
+          <Controller name="loose_pieces" control={control} render={({ field }) => (
+            <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" className="w-full border rounded px-3 py-2 text-sm" />
+          )} />
         </div>
       </div>
       <div>
-        <label className="block mb-1">Unit Price ($)</label>
-        <input {...register('unit_price')} type="number" step="0.01" className="w-full border rounded px-3 py-2" />
+        <label className="block mb-1 text-sm font-medium text-gray-700">Unit Price ($)</label>
+        <Controller name="unit_price" control={control} render={({ field }) => (
+          <input value={field.value as number} onChange={field.onChange} onBlur={field.onBlur} type="number" step="0.01" className="w-full border rounded px-3 py-2 text-sm" />
+        )} />
       </div>
       <div>
-        <label className="block mb-1">Expected Date</label>
-        <input {...register('expected_date')} type="date" className="w-full border rounded px-3 py-2" />
+        <label className="block mb-1 text-sm font-medium text-gray-700">Expected Date</label>
+        <Controller name="expected_date" control={control} render={({ field }) => (
+          <input value={field.value as string} onChange={field.onChange} onBlur={field.onBlur} type="date" className="w-full border rounded px-3 py-2 text-sm" />
+        )} />
       </div>
       <div>
-        <label className="block mb-1">Notes</label>
-        <textarea {...register('notes')} className="w-full border rounded px-3 py-2" rows={2} />
+        <label className="block mb-1 text-sm font-medium text-gray-700">Notes</label>
+        <Controller name="notes" control={control} render={({ field }) => (
+          <textarea value={field.value as string} onChange={field.onChange} onBlur={field.onBlur} className="w-full border rounded px-3 py-2 text-sm" rows={2} />
+        )} />
       </div>
       <button type="submit" disabled={createMutation.isPending}
         className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">

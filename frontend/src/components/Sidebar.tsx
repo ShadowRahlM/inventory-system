@@ -10,6 +10,7 @@ const navigation = [
   { name: 'Batches', href: '/batches', icon: '📦' },
   { name: 'Inventory', href: '/inventory', icon: '📋' },
   { name: 'Movements', href: '/movements', icon: '🔄' },
+  { name: 'Stock Take', href: '/stock-take', icon: '📥' },
   { name: 'Catalogs', href: '/catalogs', icon: '📕' },
   { name: 'Audit Logs', href: '/audit-logs', icon: '📝' },
   { name: 'Orders', href: '/orders', icon: '📋' },

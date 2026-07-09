@@ -1,5 +1,11 @@
 from django.utils.dateparse import parse_datetime
 from rest_framework.filters import BaseFilterBackend
+from rest_framework.pagination import PageNumberPagination
+
+
+class FlexiblePagination(PageNumberPagination):
+    page_size_query_param = 'page_size'
+    max_page_size = 5000
 
 
 class UpdatedSinceFilter(BaseFilterBackend):

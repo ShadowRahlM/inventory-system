@@ -20,10 +20,25 @@ const { inventoryApi } = vi.hoisted(() => {
       { id: 's2', tile_sku: 'SKU-002', batch_number: 'B002', location: 'WH-B', cartons: 5, loose_pieces: 0, total_pieces: 40 },
     ],
   }
+  const stockSummary = {
+    total_tiles: 254,
+    total_cartons: 15,
+    total_loose_pieces: 5,
+    total_pieces: 85,
+    low_stock_count: 0,
+    location_count: 2,
+    total_batches: 5,
+  }
+  const orders = { count: 0, results: [] }
   return {
     inventoryApi: {
       tiles: { list: vi.fn(() => Promise.resolve(tiles)) },
       stock: { list: vi.fn(() => Promise.resolve(stock)) },
+      reports: {
+        stockSummary: vi.fn(() => Promise.resolve(stockSummary)),
+      },
+      salesOrders: { list: vi.fn(() => Promise.resolve(orders)) },
+      purchaseOrders: { list: vi.fn(() => Promise.resolve(orders)) },
     },
   }
 })
@@ -44,8 +59,8 @@ describe('Dashboard', () => {
   it('renders stat card headings', () => {
     render(<Dashboard />)
     expect(screen.getByText('Total Tiles')).toBeInTheDocument()
-    expect(screen.getByText('Inventory Items')).toBeInTheDocument()
-    expect(screen.getAllByText('Total Pieces').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Total Stock Items')).toBeInTheDocument()
+    expect(screen.getByText('Total Pieces')).toBeInTheDocument()
   })
 
   it('renders stats cards with correct counts after loading', async () => {
@@ -53,8 +68,17 @@ describe('Dashboard', () => {
     await waitFor(() => {
       expect(screen.getByText('254')).toBeInTheDocument()
     })
-    expect(screen.getAllByText('5').length).toBeGreaterThanOrEqual(1)
+    const fives = screen.getAllByText('5')
+    expect(fives.length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('85')).toBeInTheDocument()
+  })
+
+  it('renders order cards', async () => {
+    render(<Dashboard />)
+    await waitFor(() => {
+      expect(screen.getByText('Pending Sales Orders')).toBeInTheDocument()
+    })
+    expect(screen.getByText('Pending Purchase Orders')).toBeInTheDocument()
   })
 
   it('renders search input', () => {

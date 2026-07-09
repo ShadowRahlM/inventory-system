@@ -15,6 +15,7 @@ export interface TileProduct {
   coverage_per_box: string;
   use_case: string;
   image: string | null;
+  is_mix: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -327,6 +328,14 @@ export interface CreatePurchaseOrderPayload {
     loose_pieces?: number;
     unit_price?: number;
   }>;
+}
+
+export interface StockTakeResult {
+  tiles_created: number;
+  stock_created: number;
+  stock_updated: number;
+  total_entries: number;
+  errors: Array<{ sku: string; error: string }>;
 }
 
 export interface SyncConflict {

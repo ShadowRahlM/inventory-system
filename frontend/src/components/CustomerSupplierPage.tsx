@@ -26,8 +26,9 @@ const supplierSchema = z.object({
 });
 
 function CustomersView() {
-  const { data, isLoading } = useCustomersList();
+  const { data, isLoading, error } = useCustomersList();
   if (isLoading) return <div className="text-gray-500">Loading customers...</div>;
+  if (error) return <div className="text-red-500">Failed to load customers. Please try again.</div>;
   const items = data?.results ?? [];
   return (
     <div className="overflow-x-auto">
@@ -56,8 +57,9 @@ function CustomersView() {
 }
 
 function SuppliersView() {
-  const { data, isLoading } = useSuppliersList();
+  const { data, isLoading, error } = useSuppliersList();
   if (isLoading) return <div className="text-gray-500">Loading suppliers...</div>;
+  if (error) return <div className="text-red-500">Failed to load suppliers. Please try again.</div>;
   const items = data?.results ?? [];
   return (
     <div className="overflow-x-auto">
@@ -99,6 +101,7 @@ function NewCustomerForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-md">
       <h2 className="text-xl font-bold mb-4">New Customer</h2>
       {mutation.isSuccess && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">Customer created!</div>}
+      {mutation.isError && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-sm">{mutation.error?.message ?? 'Failed to create customer'}</div>}
       <div>
         <label className="block mb-1">Name *</label>
         <input {...register('name')} className="w-full border rounded px-3 py-2" />
@@ -136,6 +139,7 @@ function NewSupplierForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-md">
       <h2 className="text-xl font-bold mb-4">New Supplier</h2>
       {mutation.isSuccess && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">Supplier created!</div>}
+      {mutation.isError && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-sm">{mutation.error?.message ?? 'Failed to create supplier'}</div>}
       <div>
         <label className="block mb-1">Name *</label>
         <input {...register('name')} className="w-full border rounded px-3 py-2" />
