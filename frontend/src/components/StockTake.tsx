@@ -17,8 +17,12 @@ interface StockInfo {
   total_pieces: number;
 }
 
+function normalizeQuotes(s: string): string {
+  return s.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"').replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+}
+
 function parseAndPreview(raw: string): { entries: PreviewEntry[]; error?: string } {
-  const stripped = raw.replace(/^\uFEFF/, '').trim();
+  const stripped = normalizeQuotes(raw).replace(/^\uFEFF/, '').trim();
   if (!stripped) return { entries: [], error: 'No JSON data' };
 
   let parsed: unknown;
@@ -229,7 +233,7 @@ export function StockTake() {
   });
 
   const handleImport = useCallback(() => {
-    const parsed = JSON.parse(rawJson.replace(/^\uFEFF/, '').trim());
+    const parsed = JSON.parse(normalizeQuotes(rawJson).replace(/^\uFEFF/, '').trim());
     mutation.mutate(parsed);
   }, [rawJson, mutation]);
 

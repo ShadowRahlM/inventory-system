@@ -5,8 +5,12 @@ import { INVENTORY_KEYS } from '../hooks/useInventoryQueries';
 import { useAuthStore } from '../lib/store';
 import type { TileCatalog, CatalogProcessResult, TileProduct } from '../types/inventory';
 
+function normalizeQuotes(s: string): string {
+  return s.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"').replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+}
+
 function cleanCatalogJson(raw: string): { cleaned: string; error?: string } {
-  const stripped = raw.replace(/^\uFEFF/, '').trim()
+  const stripped = normalizeQuotes(raw).replace(/^\uFEFF/, '').trim()
   if (!stripped) return { cleaned: '', error: 'No JSON data' }
 
   let parsed: unknown
@@ -119,7 +123,7 @@ export function Catalogs() {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     setJsonError(null);
-    const raw = jsonInput.replace(/^\uFEFF/, '').trim();
+    const raw = normalizeQuotes(jsonInput).replace(/^\uFEFF/, '').trim();
     if (!raw) {
       setJsonError('JSON data is empty');
       return;
@@ -211,7 +215,7 @@ export function Catalogs() {
   const newSkusCount = useMemo(() => {
     if (existingSkusCount === 0) return 0;
     try {
-      const parsed = JSON.parse(jsonInput);
+      const parsed = JSON.parse(normalizeQuotes(jsonInput));
       if (!Array.isArray(parsed)) return 0;
       return parsed.filter((i: any) => i.sku && !existingSkus[i.sku]).length;
     } catch {
