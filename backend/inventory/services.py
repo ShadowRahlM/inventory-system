@@ -504,7 +504,7 @@ class InventoryService:
                     movements.append(Movement(
                         tile=tile,
                         batch=batch,
-                        movement_type=MovementType.ADJUST,
+                        movement_type=MovementType.ADJUSTMENT,
                         cartons_change=cartons_change,
                         loose_pieces_change=loose_change,
                         previous_cartons=prev_cartons,
@@ -675,7 +675,7 @@ class OrderService:
                 Movement.objects.create(
                     tile=m.tile,
                     batch=m.batch,
-                    movement_type=MovementType.ADJUST,
+                    movement_type=MovementType.ADJUSTMENT,
                     cartons_change=cartons_back,
                     loose_pieces_change=loose_back,
                     previous_cartons=prev_cartons,
