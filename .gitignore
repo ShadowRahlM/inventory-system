@@ -42,6 +42,10 @@ mobile/CLAUDE.md
 
 # Config (local overrides)
 .env
+
+# Database backups
+backups/
+scripts/*.local.*
 .devin/
 *.local.json
 dump.rdb

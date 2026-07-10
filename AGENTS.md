@@ -201,6 +201,32 @@ python -c "import secrets; print(secrets.token_urlsafe(50))"
 # Update ALLOWED_HOSTS and CORS_ALLOWED_ORIGINS for your domain
 ```
 
+## Database Backup & Restore
+
+### ⚠️ Volume persistence
+The `inventory_postgres_data` Docker volume is your single source of truth. If Docker Compose recreates the project (e.g. after a crash, port conflict, or `docker compose down -v`), it creates a **fresh empty volume** and all data is lost.
+
+### Backup (manual)
+```sh
+bash scripts/backup-db.sh
+```
+Saves a `.dump` file to `backups/inventory_YYYYMMDD_HHMMSS.dump`. Keeps the 30 most recent.
+
+### Restore
+```sh
+bash scripts/restore-db.sh backups/inventory_20260710_144644.dump
+```
+Copies the dump into the db container, runs `pg_restore --clean --if-exists`, then removes it. Confirms before proceeding.
+
+### Prevent data loss
+1. Always run `bash scripts/backup-db.sh` before any `docker compose down` or rebuild
+2. Never run `docker compose down -v` (the `-v` flag deletes volumes)
+3. Backups are stored in the `backups/` directory (gitignored)
+4. For automated backups, add a cron entry:
+   ```
+   0 3 * * * cd /path/to/inventory && bash scripts/backup-db.sh
+   ```
+
 ## Generic rules (from `.cursorrules.md`)
 
 - Never round inventory quantities or mix tile batches
