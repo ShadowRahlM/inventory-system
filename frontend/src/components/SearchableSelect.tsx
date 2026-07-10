@@ -115,7 +115,7 @@ export function SearchableSelect({
         onBlur={onBlur}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+        className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-gray-100"
       />
       {error && <span className="text-red-500 text-xs mt-1 block">{error}</span>}
 

@@ -44,61 +44,63 @@ export function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form onSubmit={handleRegister} className="bg-white p-8 rounded-lg shadow-md w-96">
-        <h2 className="text-2xl font-bold mb-4">Register</h2>
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <form onSubmit={handleRegister} className="rounded-lg border bg-card p-8 w-96">
+        <h2 className="text-2xl font-bold tracking-tight mb-6">Register</h2>
         {error && (
-          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <div className="mb-4 bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded text-sm">
             {error}
           </div>
         )}
-        <div className="mb-4">
-          <label htmlFor="register-username" className="block mb-1">Username</label>
-          <input
-            id="register-username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full border rounded px-3 py-2"
-            autoFocus
-            required
-          />
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="register-username" className="block text-sm font-medium mb-1">Username</label>
+            <input
+              id="register-username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              autoFocus
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="register-password" className="block text-sm font-medium mb-1">Password</label>
+            <input
+              id="register-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              required
+              minLength={4}
+            />
+          </div>
+          <div>
+            <label htmlFor="register-confirm" className="block text-sm font-medium mb-1">Confirm Password</label>
+            <input
+              id="register-confirm"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Register
+          </button>
+          <p className="text-center text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary underline hover:text-primary/80">
+              Login
+            </Link>
+          </p>
         </div>
-        <div className="mb-4">
-          <label htmlFor="register-password" className="block mb-1">Password</label>
-          <input
-            id="register-password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border rounded px-3 py-2"
-            required
-            minLength={4}
-          />
-        </div>
-        <div className="mb-4">
-          <label htmlFor="register-confirm" className="block mb-1">Confirm Password</label>
-          <input
-            id="register-confirm"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          Register
-        </button>
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link to="/login" className="text-blue-600 underline hover:text-blue-800">
-            Login
-          </Link>
-        </p>
       </form>
     </div>
   );

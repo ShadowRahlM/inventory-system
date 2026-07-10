@@ -43,7 +43,7 @@ function CustomersView() {
           {items.length === 0 ? (
             <tr><td colSpan={4} className="text-center py-8 text-gray-400">No customers</td></tr>
           ) : items.map((c: Customer) => (
-            <tr key={c.id} className="border-b hover:bg-gray-50">
+            <tr key={c.id} className="border-b hover:bg-muted/50 transition-colors duration-150">
               <td className="py-2 font-medium">{c.name}</td>
               <td className="py-2 text-sm">{c.email || '-'}</td>
               <td className="py-2 text-sm">{c.phone || '-'}</td>
@@ -75,7 +75,7 @@ function SuppliersView() {
           {items.length === 0 ? (
             <tr><td colSpan={5} className="text-center py-8 text-gray-400">No suppliers</td></tr>
           ) : items.map((s: Supplier) => (
-            <tr key={s.id} className="border-b hover:bg-gray-50">
+            <tr key={s.id} className="border-b hover:bg-muted/50 transition-colors duration-150">
               <td className="py-2 font-medium">{s.name}</td>
               <td className="py-2 text-sm">{s.email || '-'}</td>
               <td className="py-2 text-sm">{s.phone || '-'}</td>
@@ -120,7 +120,7 @@ function NewCustomerForm() {
         <textarea {...register('address')} className="w-full border rounded px-3 py-2" rows={2} />
       </div>
       <button type="submit" disabled={mutation.isPending}
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
         {mutation.isPending ? 'Creating...' : 'Create Customer'}
       </button>
     </form>
@@ -162,7 +162,7 @@ function NewSupplierForm() {
         <textarea {...register('address')} className="w-full border rounded px-3 py-2" rows={2} />
       </div>
       <button type="submit" disabled={mutation.isPending}
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
         {mutation.isPending ? 'Creating...' : 'Create Supplier'}
       </button>
     </form>

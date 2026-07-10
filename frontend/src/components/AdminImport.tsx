@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import api from '../lib/api';
+import { PageHeader } from './ui/PageHeader';
 
 interface ImportResult {
   total_created: number;
@@ -56,15 +57,10 @@ export function AdminImport() {
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Admin — Data Import</h1>
+      <PageHeader title="Data Import" description="Upload a previously exported JSON file to restore data." />
 
-      <div className="bg-white p-6 rounded-lg shadow border max-w-xl mb-6">
-        <p className="text-gray-700 mb-4">
-          Upload a previously exported JSON file to restore data. Use the preview
-          button first to see what will be imported, then confirm to execute.
-        </p>
-
-        <div className="bg-yellow-50 border border-yellow-200 rounded px-4 py-3 text-sm text-yellow-800 mb-4">
+      <div className="rounded-lg border bg-card p-6 max-w-xl mb-6">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300 mb-4">
           ⚠️ Users are created with unusable passwords — they must reset on login.
           Existing records (same ID) are skipped without error.
         </div>
@@ -74,40 +70,54 @@ export function AdminImport() {
           type="file"
           accept=".json"
           onChange={handleFileChange}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-4"
+          className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 mb-4"
         />
+
+        {fileName && (
+          <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 mb-4">
+            <span>✓</span> <span>Selected: <strong>{fileName}</strong></span>
+          </div>
+        )}
 
         <div className="flex gap-3">
           <button
             onClick={() => doImport(true)}
             disabled={!fileName || loading}
-            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {loading ? 'Processing…' : '🔍 Preview'}
+            {loading ? (
+              <span className="inline-block w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+            ) : (
+              '🔍 Preview'
+            )}
           </button>
           <button
             onClick={() => doImport(false)}
             disabled={!fileName || loading}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {loading ? 'Importing…' : '📥 Import'}
+            {loading ? (
+              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              '📥 Import'
+            )}
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-xl mb-6">
+        <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded max-w-xl mb-6 text-sm">
           {error}
         </div>
       )}
 
       {result && (
-        <div className="bg-white rounded-lg shadow border max-w-xl">
-          <div className="p-4 border-b bg-gray-50 font-medium">
+        <div className="rounded-lg border bg-card max-w-xl">
+          <div className="p-4 border-b bg-muted/50 font-medium text-sm">
             Import from {result.version} (exported {result.exported_at})
           </div>
           {result.preview && (
-            <div className="p-4 bg-blue-50 border-b border-blue-100 text-sm text-blue-800">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-300">
               ⚠️ This was a <strong>preview</strong> — no data was written. Click "Import" to execute.
             </div>
           )}
@@ -115,14 +125,14 @@ export function AdminImport() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2">Model</th>
-                  <th className="text-right py-2">Created</th>
-                  <th className="text-right py-2">Skipped</th>
+                  <th className="text-left py-2 text-sm font-medium text-muted-foreground">Model</th>
+                  <th className="text-right py-2 text-sm font-medium text-muted-foreground">Created</th>
+                  <th className="text-right py-2 text-sm font-medium text-muted-foreground">Skipped</th>
                 </tr>
               </thead>
               <tbody>
                 {Object.entries(result.counts).map(([label, c]) => (
-                  <tr key={label} className="border-b hover:bg-gray-50">
+                  <tr key={label} className="border-b hover:bg-muted/50">
                     <td className="py-2">{label}</td>
                     <td className="py-2 text-right">{c.created}</td>
                     <td className="py-2 text-right">{c.skipped}</td>
@@ -132,8 +142,8 @@ export function AdminImport() {
               <tfoot>
                 <tr className="font-semibold border-t-2">
                   <td className="py-2">Total</td>
-                  <td className="py-2 text-right text-green-700">{result.total_created}</td>
-                  <td className="py-2 text-right text-gray-500">{result.total_skipped}</td>
+                  <td className="py-2 text-right text-green-700 dark:text-green-400">{result.total_created}</td>
+                  <td className="py-2 text-right text-muted-foreground">{result.total_skipped}</td>
                 </tr>
               </tfoot>
             </table>

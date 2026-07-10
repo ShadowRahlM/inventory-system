@@ -93,7 +93,7 @@ export function TransferForm() {
       <button
         type="submit"
         disabled={transferMutation.isPending}
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
       >
         {transferMutation.isPending ? 'Transferring...' : 'Transfer Inventory'}
       </button>

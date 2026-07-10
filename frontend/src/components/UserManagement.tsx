@@ -91,8 +91,8 @@ function UserForm({ user, onClose }: { user?: UserRecord; onClose: () => void })
             </select>
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm border rounded hover:bg-gray-50">Cancel</button>
-            <button type="submit" disabled={isPending} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm border rounded hover:bg-muted active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">Cancel</button>
+            <button type="submit" disabled={isPending} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
               {isPending ? 'Saving...' : 'Save'}
             </button>
           </div>
@@ -132,7 +132,7 @@ export function UserManagement() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">User Management</h1>
         {isAdmin && (
-          <button onClick={() => { setEditingUser(undefined); setShowForm(true); }} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
+          <button onClick={() => { setEditingUser(undefined); setShowForm(true); }} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-sm">
             + New User
           </button>
         )}
@@ -153,7 +153,7 @@ export function UserManagement() {
             {users.length === 0 ? (
               <tr><td colSpan={isAdmin ? 5 : 4} className="text-center py-8 text-gray-400">No users found</td></tr>
             ) : users.map((u) => (
-              <tr key={u.id} className="border-b hover:bg-gray-50">
+              <tr key={u.id} className="border-b hover:bg-muted/50 transition-colors duration-150">
                 <td className="py-3 px-4 font-medium">{u.username}</td>
                 <td className="py-3 px-4 text-gray-600">{u.email || '-'}</td>
                 <td className="py-3 px-4">
@@ -206,7 +206,7 @@ export function UserManagement() {
               </div>
             )}
             <div className="flex justify-end gap-2">
-              <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm border rounded hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm border rounded hover:bg-muted active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">Cancel</button>
               <button
                 onClick={() => {
                   deleteMutation.mutate(confirmDelete, {
@@ -214,7 +214,7 @@ export function UserManagement() {
                   });
                 }}
                 disabled={deleteMutation.isPending}
-                className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
               </button>

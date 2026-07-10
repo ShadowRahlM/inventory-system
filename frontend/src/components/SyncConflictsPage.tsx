@@ -77,14 +77,14 @@ function ConflictCard({ conflict }: { conflict: SyncConflict }) {
           <button
             onClick={() => resolve({ id: conflict.id, resolution: 'local' })}
             disabled={isPending}
-            className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+            className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-destructive/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
           >
             Keep Local
           </button>
           <button
             onClick={() => resolve({ id: conflict.id, resolution: 'remote' })}
             disabled={isPending}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
           >
             Use Remote
           </button>

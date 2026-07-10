@@ -102,7 +102,7 @@ export function ReportsPage() {
               </thead>
               <tbody>
                 {movementSummary.movements.map((m, i) => (
-                  <tr key={i} className="border-b hover:bg-gray-50">
+                  <tr key={i} className="border-b hover:bg-muted/50 transition-colors duration-150">
                     <td className="py-3 px-4">{m.period?.slice(0, 10) ?? 'N/A'}</td>
                     <td className="py-3 px-4 capitalize">{m.movement_type}</td>
                     <td className="py-3 px-4 text-right">{m.count}</td>

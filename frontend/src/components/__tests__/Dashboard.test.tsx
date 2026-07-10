@@ -59,7 +59,7 @@ describe('Dashboard', () => {
   it('renders stat card headings', () => {
     render(<Dashboard />)
     expect(screen.getByText('Total Tiles')).toBeInTheDocument()
-    expect(screen.getByText('Total Stock Items')).toBeInTheDocument()
+    expect(screen.getByText('Stock Items')).toBeInTheDocument()
     expect(screen.getByText('Total Pieces')).toBeInTheDocument()
   })
 

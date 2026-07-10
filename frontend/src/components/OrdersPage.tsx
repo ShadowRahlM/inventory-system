@@ -42,14 +42,14 @@ function SalesOrderActions({ order }: { order: SalesOrder }) {
           <button
             onClick={() => confirmMutation.mutate(order.id)}
             disabled={confirmMutation.isPending}
-            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {confirmMutation.isPending ? '...' : 'Confirm'}
           </button>
           <button
             onClick={() => cancelMutation.mutate(order.id)}
             disabled={cancelMutation.isPending}
-            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-destructive/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {cancelMutation.isPending ? '...' : 'Cancel'}
           </button>
@@ -60,14 +60,14 @@ function SalesOrderActions({ order }: { order: SalesOrder }) {
           <button
             onClick={() => shipMutation.mutate(order.id)}
             disabled={shipMutation.isPending}
-            className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+            className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-accent/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {shipMutation.isPending ? '...' : 'Ship'}
           </button>
           <button
             onClick={() => cancelMutation.mutate(order.id)}
             disabled={cancelMutation.isPending}
-            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-destructive/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {cancelMutation.isPending ? '...' : 'Cancel'}
           </button>
@@ -87,7 +87,7 @@ function PurchaseOrderActions({ order }: { order: PurchaseOrderType }) {
         <button
           onClick={() => confirmMutation.mutate(order.id)}
           disabled={confirmMutation.isPending}
-          className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {confirmMutation.isPending ? '...' : 'Confirm'}
         </button>
@@ -96,7 +96,7 @@ function PurchaseOrderActions({ order }: { order: PurchaseOrderType }) {
         <button
           onClick={() => receiveMutation.mutate(order.id)}
           disabled={receiveMutation.isPending}
-          className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+          className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-600 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {receiveMutation.isPending ? '...' : 'Receive'}
         </button>
@@ -106,8 +106,9 @@ function PurchaseOrderActions({ order }: { order: PurchaseOrderType }) {
 }
 
 function SalesOrdersView() {
-  const { data, isLoading } = useSalesOrdersList();
+  const { data, isLoading, isError, error } = useSalesOrdersList();
   if (isLoading) return <div className="text-gray-500">Loading sales orders...</div>;
+  if (isError) return <div className="text-red-500">Failed to load sales orders: {error?.message}</div>;
   const orders = data?.results ?? [];
   return (
     <div className="overflow-x-auto">
@@ -126,7 +127,7 @@ function SalesOrdersView() {
           {orders.length === 0 ? (
             <tr><td colSpan={6} className="text-center py-8 text-gray-400">No sales orders</td></tr>
           ) : orders.map((order) => (
-            <tr key={order.id} className="border-b hover:bg-gray-50">
+            <tr key={order.id} className="border-b hover:bg-muted/50 transition-colors duration-150">
               <td className="py-2 font-medium">{order.order_number}</td>
               <td className="py-2">{order.customer_name}</td>
               <td className="py-2">
@@ -146,8 +147,9 @@ function SalesOrdersView() {
 }
 
 function PurchaseOrdersView() {
-  const { data, isLoading } = usePurchaseOrdersList();
+  const { data, isLoading, isError, error } = usePurchaseOrdersList();
   if (isLoading) return <div className="text-gray-500">Loading purchase orders...</div>;
+  if (isError) return <div className="text-red-500">Failed to load purchase orders: {error?.message}</div>;
   const orders = data?.results ?? [];
   return (
     <div className="overflow-x-auto">
@@ -168,7 +170,7 @@ function PurchaseOrdersView() {
           {orders.length === 0 ? (
             <tr><td colSpan={8} className="text-center py-8 text-gray-400">No purchase orders</td></tr>
           ) : orders.map((order) => (
-            <tr key={order.id} className="border-b hover:bg-gray-50">
+            <tr key={order.id} className="border-b hover:bg-muted/50 transition-colors duration-150">
               <td className="py-2 font-medium">{order.order_number}</td>
               <td className="py-2">{order.supplier_name}</td>
               <td className="py-2">
@@ -239,7 +241,7 @@ function SalesOrderLineItemRow({ index, control, tileOptions, remove, isOnly }: 
         <input value={field.value as number} onChange={field.onChange} type="number" step="1" className="w-24 border rounded px-2 py-2 text-sm" placeholder="Price" />
       )} />
       {!isOnly && (
-        <button type="button" onClick={remove} className="px-2 py-2 text-red-500 hover:text-red-700 text-lg">&times;</button>
+        <button type="button" onClick={remove} className="px-2 py-2 text-red-500 hover:text-red-700 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-lg">&times;</button>
       )}
     </div>
   );
@@ -313,7 +315,7 @@ function NewSalesOrderForm() {
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-medium text-gray-700">Items</label>
           <button type="button" onClick={() => append({ tile_id: '', cartons: 0, loose_pieces: 0, unit_price: 0 })}
-            className="text-sm text-blue-600 hover:text-blue-800">+ Add Item</button>
+            className="text-sm text-blue-600 hover:text-blue-800 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">+ Add Item</button>
         </div>
         <div className="space-y-2">
           <div className="flex gap-2 text-xs text-gray-500 px-2">
@@ -339,7 +341,7 @@ function NewSalesOrderForm() {
         )} />
       </div>
       <button type="submit" disabled={createMutation.isPending}
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
         {createMutation.isPending ? 'Creating...' : 'Create Sales Order'}
       </button>
     </form>
@@ -422,7 +424,7 @@ function NewPurchaseOrderForm() {
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-medium text-gray-700">Items</label>
           <button type="button" onClick={() => append({ tile_id: '', cartons: 0, loose_pieces: 0, unit_price: 0 })}
-            className="text-sm text-blue-600 hover:text-blue-800">+ Add Item</button>
+            className="text-sm text-blue-600 hover:text-blue-800 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">+ Add Item</button>
         </div>
         <div className="space-y-2">
           <div className="flex gap-2 text-xs text-gray-500 px-2">
@@ -454,7 +456,7 @@ function NewPurchaseOrderForm() {
         )} />
       </div>
       <button type="submit" disabled={createMutation.isPending}
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
         {createMutation.isPending ? 'Creating...' : 'Create Purchase Order'}
       </button>
     </form>
@@ -476,7 +478,7 @@ export function OrdersPage() {
       <div className="border-b mb-6 flex flex-wrap gap-1">
         {tabs.map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium rounded-t transition-colors ${
+            className={`px-4 py-2 text-sm font-medium rounded-t transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
               activeTab === tab
                 ? 'bg-white border-l border-t border-r border-gray-200 text-blue-600 -mb-px'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'

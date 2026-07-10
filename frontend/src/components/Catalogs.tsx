@@ -265,11 +265,11 @@ export function Catalogs() {
           <button
             onClick={() => { setDeleteError(null); handleBulkDelete(); }}
             disabled={bulkDeleteMutation.isPending}
-            className="bg-red-600 text-white px-4 py-1.5 rounded text-sm hover:bg-red-700 disabled:opacity-50"
+            className="bg-red-600 text-white px-4 py-1.5 rounded text-sm hover:bg-destructive/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete Selected'}
           </button>
-          <button onClick={() => setSelectedIds(new Set())} className="text-sm text-gray-600 hover:text-gray-800 ml-auto">
+          <button onClick={() => setSelectedIds(new Set())} className="text-sm text-gray-600 hover:text-gray-800 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ml-auto">
             Clear selection
           </button>
           {deleteError && (
@@ -317,8 +317,8 @@ export function Catalogs() {
             <input ref={fileRef} type="file" accept=".json,application/json" onChange={handleFileUpload} className="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
             {jsonInput.trim() && (
               <>
-                <button type="button" onClick={handleCleanJson} className="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2.5 py-1.5 rounded font-medium">Clean JSON</button>
-                <button type="button" onClick={() => { setJsonInput(''); if (fileRef.current) fileRef.current.value = ''; setJsonError(null); }} className="text-xs text-red-500 hover:text-red-700">Clear</button>
+                <button type="button" onClick={handleCleanJson} className="text-xs bg-green-100 text-green-700 hover:bg-green-200 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 px-2.5 py-1.5 rounded font-medium">Clean JSON</button>
+                <button type="button" onClick={() => { setJsonInput(''); if (fileRef.current) fileRef.current.value = ''; setJsonError(null); }} className="text-xs text-red-500 hover:text-red-700 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">Clear</button>
               </>
             )}
           </div>
@@ -352,7 +352,7 @@ export function Catalogs() {
           <div className="mb-4 text-sm text-gray-500 italic">Checking for duplicates...</div>
         )}
 
-        <button type="submit" disabled={!jsonInput.trim() || createMutation.isPending} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+        <button type="submit" disabled={!jsonInput.trim() || createMutation.isPending} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
           {createMutation.isPending ? 'Saving...' : 'Save Catalog'}
         </button>
       </form>
@@ -380,12 +380,12 @@ export function Catalogs() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    {isAdmin && <button onClick={() => handleDelete(catalog.id)} className="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 text-sm">Delete</button>}
+                    {isAdmin && <button onClick={() => handleDelete(catalog.id)} className="bg-red-600 text-white px-3 py-2 rounded hover:bg-destructive/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-sm">Delete</button>}
                     {!catalog.processed && isAdmin && (
                       <button
                         onClick={() => processMutation.mutate(catalog.id)}
                         disabled={processMutation.isPending && processMutation.variables === catalog.id}
-                        className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm disabled:opacity-50"
+                        className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-accent/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {processMutation.isPending && processMutation.variables === catalog.id ? 'Processing...' : 'Process'}
                       </button>
@@ -433,8 +433,8 @@ export function Catalogs() {
             <p className="text-gray-600 mb-4">Are you sure? This cannot be undone.</p>
             {deleteError && <div className="mb-3 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">{deleteError}</div>}
             <div className="flex justify-end gap-2">
-              <button onClick={() => { setDeleteTarget(null); setDeleteError(null); }} className="px-4 py-2 border rounded hover:bg-gray-50">Cancel</button>
-              <button onClick={() => deleteMutation.mutate(deleteTarget)} disabled={deleteMutation.isPending} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50">
+              <button onClick={() => { setDeleteTarget(null); setDeleteError(null); }} className="px-4 py-2 border rounded hover:bg-muted/50 transition-colors duration-150 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">Cancel</button>
+              <button onClick={() => deleteMutation.mutate(deleteTarget)} disabled={deleteMutation.isPending} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-destructive/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
               </button>
             </div>

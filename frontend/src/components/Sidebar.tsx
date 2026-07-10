@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore, useUIStore } from '../lib/store';
 import { NotificationBell } from './NotificationBell';
+import { ThemeToggle } from './ui/ThemeToggle';
 import { useSyncConflictsList } from '../hooks/useInventoryQueries';
 
 const navigation = [
@@ -36,10 +37,11 @@ export function Sidebar() {
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         {sidebarOpen && <span className="text-xl font-bold">Inventory System</span>}
         <div className="flex items-center gap-1">
+          <ThemeToggle />
           {sidebarOpen && <NotificationBell />}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-700 rounded"
+            className="p-2 hover:bg-gray-700/70 rounded transition-colors duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             {sidebarOpen ? '◀' : '▶'}
           </button>
@@ -50,8 +52,8 @@ export function Sidebar() {
           <Link
             key={item.name}
             to={item.href}
-            className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
-              location.pathname === item.href ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+            className={`flex items-center px-4 py-3 hover:bg-gray-700/70 transition-colors duration-150 ${
+              location.pathname === item.href ? 'bg-gray-700/70 border-r-4 border-blue-500' : ''
             }`}
           >
             <span className="text-xl">{item.icon}</span>
@@ -62,8 +64,8 @@ export function Sidebar() {
           <>
             <Link
               to="/stock-take"
-              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
-                location.pathname === '/stock-take' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              className={`flex items-center px-4 py-3 hover:bg-gray-700/70 transition-colors duration-150 ${
+                location.pathname === '/stock-take' ? 'bg-gray-700/70 border-r-4 border-blue-500' : ''
               }`}
             >
               <span className="text-xl">📥</span>
@@ -71,8 +73,8 @@ export function Sidebar() {
             </Link>
             <Link
               to="/catalogs"
-              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
-                location.pathname === '/catalogs' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              className={`flex items-center px-4 py-3 hover:bg-gray-700/70 transition-colors duration-150 ${
+                location.pathname === '/catalogs' ? 'bg-gray-700/70 border-r-4 border-blue-500' : ''
               }`}
             >
               <span className="text-xl">📕</span>
@@ -80,8 +82,8 @@ export function Sidebar() {
             </Link>
             <Link
               to="/users"
-              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
-                location.pathname === '/users' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              className={`flex items-center px-4 py-3 hover:bg-gray-700/70 transition-colors duration-150 ${
+                location.pathname === '/users' ? 'bg-gray-700/70 border-r-4 border-blue-500' : ''
               }`}
             >
               <span className="text-xl">👥</span>
@@ -89,8 +91,8 @@ export function Sidebar() {
             </Link>
             <Link
               to="/sync-conflicts"
-              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
-                location.pathname === '/sync-conflicts' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              className={`flex items-center px-4 py-3 hover:bg-gray-700/70 transition-colors duration-150 ${
+                location.pathname === '/sync-conflicts' ? 'bg-gray-700/70 border-r-4 border-blue-500' : ''
               }`}
             >
               <span className="text-xl">🔀</span>
@@ -98,7 +100,7 @@ export function Sidebar() {
                 <span className="ml-3 flex items-center gap-2">
                   Sync Conflicts
                   {unresolvedConflicts > 0 && (
-                    <span className="bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 min-w-5 text-center">
+                    <span className="bg-destructive text-destructive-foreground text-xs font-bold rounded-full px-1.5 py-0.5 min-w-5 text-center">
                       {unresolvedConflicts > 9 ? '9+' : unresolvedConflicts}
                     </span>
                   )}
@@ -107,8 +109,8 @@ export function Sidebar() {
             </Link>
             <Link
               to="/admin-export"
-              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
-                location.pathname === '/admin-export' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              className={`flex items-center px-4 py-3 hover:bg-gray-700/70 transition-colors duration-150 ${
+                location.pathname === '/admin-export' ? 'bg-gray-700/70 border-r-4 border-blue-500' : ''
               }`}
             >
               <span className="text-xl">📤</span>
@@ -116,8 +118,8 @@ export function Sidebar() {
             </Link>
             <Link
               to="/admin-import"
-              className={`flex items-center px-4 py-3 hover:bg-gray-700 transition-colors ${
-                location.pathname === '/admin-import' ? 'bg-gray-700 border-r-4 border-blue-500' : ''
+              className={`flex items-center px-4 py-3 hover:bg-gray-700/70 transition-colors duration-150 ${
+                location.pathname === '/admin-import' ? 'bg-gray-700/70 border-r-4 border-blue-500' : ''
               }`}
             >
               <span className="text-xl">📥</span>
@@ -145,7 +147,7 @@ export function Sidebar() {
         )}
         <button
           onClick={handleLogout}
-          className="flex items-center w-full px-2 py-2 text-sm text-red-300 hover:bg-gray-700 hover:text-red-200 rounded transition-colors"
+          className="flex items-center w-full px-2 py-2 text-sm text-red-300 hover:bg-gray-700/70 hover:text-red-200 rounded transition-colors duration-150 active:scale-[0.97]"
           title="Sign out"
         >
           <span className="text-xl">🚪</span>

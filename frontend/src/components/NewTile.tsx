@@ -106,69 +106,69 @@ export function NewTile() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">New Tile</h1>
+      <h1 className="text-2xl font-bold tracking-tight mb-6">New Tile</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow border space-y-5">
+      <form onSubmit={handleSubmit} className="rounded-lg border bg-card p-6 space-y-5">
         {createMutation.isError && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-sm">
+          <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded text-sm">
             {createMutation.error?.message ?? 'Failed to create tile'}
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-medium mb-1">SKU *</label>
-            <input type="text" value={sku} required onChange={(e) => { setSku(e.target.value); update({ sku: e.target.value }); }} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. GW-COS-3006" />
+            <input type="text" value={sku} required onChange={(e) => { setSku(e.target.value); update({ sku: e.target.value }); }} className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="e.g. GW-COS-3006" />
             {skuCheck?.exists && sku === debouncedSku && (
-              <div className="mt-2 flex items-center gap-2 bg-yellow-50 border border-yellow-300 text-yellow-800 px-3 py-2 rounded text-sm">
+              <div className="mt-2 flex items-center gap-2 bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 px-3 py-2 rounded text-sm">
                 <span>⚠️</span>
                 <span>
                   Tile "<strong>{skuCheck.tile!.name}</strong>" already exists —{' '}
-                  <Link to={`/tiles?edit=${skuCheck.tile!.id}`} className="text-blue-600 underline hover:text-blue-800">View Tile</Link>
+                  <Link to={`/tiles?edit=${skuCheck.tile!.id}`} className="text-primary underline hover:text-primary/80">View Tile</Link>
                 </span>
               </div>
             )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Name *</label>
-            <input type="text" value={form.name} required onChange={(e) => update({ name: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. Cosmos White 30x60" />
+            <input type="text" value={form.name} required onChange={(e) => update({ name: e.target.value })} className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="e.g. Cosmos White 30x60" />
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid gap-4 md:grid-cols-3">
           <div>
             <label className="block text-sm font-medium mb-1">Brand</label>
-            <select value={form.brand} onChange={(e) => update({ brand: e.target.value, series: '' })} className="w-full border rounded px-3 py-2 text-sm">
+            <select value={form.brand} onChange={(e) => update({ brand: e.target.value, series: '' })} className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               {BRANDS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Series</label>
-            <input type="text" value={form.series} onChange={(e) => update({ series: e.target.value })} list={form.brand !== 'other' ? 'series-suggestions' : undefined} className="w-full border rounded px-3 py-2 text-sm" placeholder="Collection name" />
+            <input type="text" value={form.series} onChange={(e) => update({ series: e.target.value })} list={form.brand !== 'other' ? 'series-suggestions' : undefined} className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Collection name" />
             <datalist id="series-suggestions">
               {suggestedSeries.map((s) => <option key={s} value={s} />)}
             </datalist>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Tier</label>
-            <select value={form.tier} onChange={(e) => update({ tier: e.target.value })} className="w-full border rounded px-3 py-2 text-sm">
+            <select value={form.tier} onChange={(e) => update({ tier: e.target.value })} className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
               {TIERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid gap-4 md:grid-cols-3">
           <div>
             <label className="block text-sm font-medium mb-1">Dimensions *</label>
-            <input type="text" value={form.dimensions} required onChange={(e) => update({ dimensions: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. 30x60cm" />
+            <input type="text" value={form.dimensions} required onChange={(e) => update({ dimensions: e.target.value })} className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="e.g. 30x60cm" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Pieces/Carton *</label>
-            <input type="number" value={form.pieces_per_carton} required min={1} onChange={(e) => update({ pieces_per_carton: Number(e.target.value) })} className="w-full border rounded px-3 py-2 text-sm" />
+            <input type="number" value={form.pieces_per_carton} required min={1} onChange={(e) => update({ pieces_per_carton: Number(e.target.value) })} className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Category</label>
-            <input type="text" value={form.category} onChange={(e) => update({ category: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. Wall, Floor" list="category-suggestions" />
+            <input type="text" value={form.category} onChange={(e) => update({ category: e.target.value })} className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="e.g. Wall, Floor" list="category-suggestions" />
             <datalist id="category-suggestions">
               {['Wall', 'Floor', 'Mosaic', 'Wood', 'Stone', 'Bathroom', 'Kitchen', 'Outdoor'].map((c) => <option key={c} value={c} />)}
             </datalist>
@@ -181,35 +181,35 @@ export function NewTile() {
             id="is_mix"
             checked={form.is_mix}
             onChange={(e) => update({ is_mix: e.target.checked })}
-            className="rounded border-gray-300"
+            className="rounded border-input"
           />
           <label htmlFor="is_mix" className="text-sm font-medium">Mixed/Temporary Bin</label>
         </div>
 
         <fieldset className="border rounded p-4 space-y-4">
           <legend className="text-sm font-semibold px-2">Specifications</legend>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="block text-sm font-medium mb-1">Type</label>
-              <input type="text" value={form.tile_type} onChange={(e) => update({ tile_type: e.target.value })} list="type-suggestions" className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. Ceramic Floor Tile" />
+              <input type="text" value={form.tile_type} onChange={(e) => update({ tile_type: e.target.value })} list="type-suggestions" className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="e.g. Ceramic Floor Tile" />
               <datalist id="type-suggestions">{TYPES.map((t) => <option key={t} value={t} />)}</datalist>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Finish</label>
-              <input type="text" value={form.finish} onChange={(e) => update({ finish: e.target.value })} list="finish-suggestions" className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. Matt, Gloss" />
+              <input type="text" value={form.finish} onChange={(e) => update({ finish: e.target.value })} list="finish-suggestions" className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="e.g. Matt, Gloss" />
               <datalist id="finish-suggestions">{FINISHES.map((f) => <option key={f} value={f} />)}</datalist>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Thickness</label>
-              <input type="text" value={form.thickness} onChange={(e) => update({ thickness: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. 8-10mm" />
+              <input type="text" value={form.thickness} onChange={(e) => update({ thickness: e.target.value })} className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="e.g. 8-10mm" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Coverage/Box</label>
-              <input type="text" value={form.coverage_per_box} onChange={(e) => update({ coverage_per_box: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. 1.92 sqm per box" />
+              <input type="text" value={form.coverage_per_box} onChange={(e) => update({ coverage_per_box: e.target.value })} className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="e.g. 1.92 sqm per box" />
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium mb-1">Use Case</label>
-              <input type="text" value={form.use_case} onChange={(e) => update({ use_case: e.target.value })} list="usecase-suggestions" className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. Living rooms, bedrooms" />
+              <input type="text" value={form.use_case} onChange={(e) => update({ use_case: e.target.value })} list="usecase-suggestions" className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="e.g. Living rooms, bedrooms" />
               <datalist id="usecase-suggestions">{USE_CASES.map((u) => <option key={u} value={u} />)}</datalist>
             </div>
           </div>
@@ -217,19 +217,19 @@ export function NewTile() {
 
         <div>
           <label className="block text-sm font-medium mb-1">Description</label>
-          <textarea value={form.description} onChange={(e) => update({ description: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" rows={2} placeholder="Additional notes..." />
+          <textarea value={form.description} onChange={(e) => update({ description: e.target.value })} className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" rows={2} placeholder="Additional notes..." />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">Product Image</label>
-          <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} className="w-full text-sm" />
+          <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} className="w-full text-sm text-muted-foreground" />
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button type="submit" disabled={createMutation.isPending} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+          <button type="submit" disabled={createMutation.isPending} className="rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
             {createMutation.isPending ? 'Saving...' : 'Save Tile'}
           </button>
-          <button type="button" onClick={() => navigate('/tiles')} className="px-6 py-2 border rounded hover:bg-gray-50">Cancel</button>
+          <button type="button" onClick={() => navigate('/tiles')} className="rounded-md border bg-background px-6 py-2 text-sm font-medium hover:bg-muted">Cancel</button>
         </div>
       </form>
     </div>
