@@ -16,6 +16,14 @@ vi.mock('../../hooks/useInventoryQueries', () => ({
     data: null,
     error: null,
   })),
+  useTilesList: vi.fn(() => ({
+    data: { count: 0, results: [] },
+    isLoading: false,
+  })),
+  useBatchesList: vi.fn(() => ({
+    data: { count: 0, results: [] },
+    isLoading: false,
+  })),
 }))
 
 beforeEach(() => {

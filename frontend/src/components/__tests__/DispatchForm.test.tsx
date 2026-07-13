@@ -20,6 +20,10 @@ vi.mock('../../hooks/useInventoryQueries', () => ({
     data: { count: 0, results: [] },
     isLoading: false,
   })),
+  useBatchesList: vi.fn(() => ({
+    data: { count: 0, results: [] },
+    isLoading: false,
+  })),
 }))
 
 beforeEach(() => {
@@ -39,8 +43,8 @@ describe('DispatchForm', () => {
 
   it('shows all required field labels', () => {
     render(<DispatchForm />)
-    expect(screen.getByText(/Tile ID/)).toBeInTheDocument()
-    expect(screen.getByText(/Batch ID/)).toBeInTheDocument()
+    expect(screen.getByText(/Tile/)).toBeInTheDocument()
+    expect(screen.getByText(/Batch/)).toBeInTheDocument()
     expect(screen.getByText(/Cartons/)).toBeInTheDocument()
     expect(screen.getByText(/Location/)).toBeInTheDocument()
   })

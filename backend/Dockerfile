@@ -6,8 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt gunicorn daphne \
-    "setuptools<75"
+RUN pip install --no-cache-dir --user -r requirements.txt gunicorn daphne
 
 FROM python:3.13-slim
 
@@ -21,8 +20,7 @@ ENV PATH=/root/.local/bin:$PATH
 
 COPY . .
 
-RUN pip install --no-cache-dir "setuptools<75" && \
-    python manage.py collectstatic --noinput
+RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 

@@ -656,20 +656,29 @@ class OrderService:
             ).select_related('tile', 'batch').select_for_update()
 
             for m in dispatch_movements:
-                inv, _ = Inventory.objects.select_for_update().get_or_create(
+                inv_records = list(Inventory.objects.select_for_update().filter(
                     tile=m.tile,
                     batch=m.batch,
-                    location='STOCKROOM',
-                    defaults={'cartons': 0, 'loose_pieces': 0},
-                )
+                    cartons=m.new_cartons,
+                    loose_pieces=m.new_loose_pieces,
+                ))
+                if inv_records:
+                    inv = inv_records[0]
+                else:
+                    inv, _ = Inventory.objects.select_for_update().get_or_create(
+                        tile=m.tile,
+                        batch=m.batch,
+                        location='STOCKROOM',
+                        defaults={'cartons': 0, 'loose_pieces': 0},
+                    )
                 cartons_back = abs(m.cartons_change)
                 loose_back = -m.loose_pieces_change
                 inv.cartons += cartons_back
-                inv.loose_pieces += loose_back
+                inv.loose_pieces -= m.loose_pieces_change
                 inv.save()
 
                 prev_cartons = inv.cartons - cartons_back
-                prev_loose = inv.loose_pieces - loose_back
+                prev_loose = inv.loose_pieces + m.loose_pieces_change
                 Movement.objects.create(
                     tile=m.tile,
                     batch=m.batch,

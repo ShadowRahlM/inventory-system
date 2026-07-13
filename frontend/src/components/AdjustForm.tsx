@@ -1,11 +1,13 @@
-import { useForm } from 'react-hook-form';
+import { useMemo } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAdjustInventory } from '../hooks/useInventoryQueries';
+import { useAdjustInventory, useTilesList, useBatchesList } from '../hooks/useInventoryQueries';
+import { SearchableSelect } from './SearchableSelect';
 
 const adjustSchema = z.object({
-  tile_id: z.string().uuid(),
-  batch_id: z.string().uuid(),
+  tile_id: z.string().uuid('Select a valid tile'),
+  batch_id: z.string().uuid('Select a valid batch'),
   location: z.string().min(1),
   new_cartons: z.number().int().min(0),
   new_loose_pieces: z.number().int().min(0),
@@ -16,15 +18,34 @@ type AdjustFormData = z.infer<typeof adjustSchema>;
 
 export function AdjustForm() {
   const adjustMutation = useAdjustInventory();
+  const { data: tiles } = useTilesList();
+  const { data: batches } = useBatchesList();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<AdjustFormData>({
+  const { control, handleSubmit, reset, watch, formState: { errors } } = useForm<AdjustFormData>({
     resolver: zodResolver(adjustSchema),
+    defaultValues: {
+      tile_id: '',
+      batch_id: '',
+      location: '',
+      new_cartons: 0,
+      new_loose_pieces: 0,
+      reason: '',
+    },
   });
+
+  const tileOptions = useMemo(
+    () => (tiles?.results ?? []).map((t: any) => ({ value: t.id, label: `${t.sku} — ${t.name}` })),
+    [tiles],
+  );
+
+  const selectedTileId = watch('tile_id');
+
+  const batchOptions = useMemo(
+    () => (batches?.results ?? [])
+      .filter((b: any) => b.tile === selectedTileId && b.is_active)
+      .map((b: any) => ({ value: b.id, label: `${b.batch_number} — ${b.supplier} (${b.tile_sku})` })),
+    [batches, selectedTileId],
+  );
 
   const onSubmit = (data: AdjustFormData) => {
     adjustMutation.mutate(data, {
@@ -48,39 +69,68 @@ export function AdjustForm() {
         </div>
       )}
 
-      <div>
-        <label className="block mb-1">Tile ID</label>
-        <input {...register('tile_id')} className="w-full border rounded px-3 py-2" placeholder="UUID" />
-        {errors.tile_id && <span className="text-red-500">{errors.tile_id.message}</span>}
-      </div>
+      <Controller
+        name="tile_id"
+        control={control}
+        render={({ field }) => (
+          <SearchableSelect
+            label="Tile"
+            options={tileOptions}
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            placeholder="Search tile..."
+            error={errors.tile_id?.message}
+          />
+        )}
+      />
 
-      <div>
-        <label className="block mb-1">Batch ID</label>
-        <input {...register('batch_id')} className="w-full border rounded px-3 py-2" placeholder="UUID" />
-        {errors.batch_id && <span className="text-red-500">{errors.batch_id.message}</span>}
-      </div>
+      <Controller
+        name="batch_id"
+        control={control}
+        render={({ field }) => (
+          <SearchableSelect
+            label="Batch"
+            options={batchOptions}
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            placeholder={selectedTileId ? 'Search batch...' : 'Select a tile first'}
+            error={errors.batch_id?.message}
+            disabled={!selectedTileId}
+          />
+        )}
+      />
 
       <div>
         <label className="block mb-1">Location</label>
-        <input {...register('location')} className="w-full border rounded px-3 py-2" />
+        <Controller name="location" control={control} render={({ field }) => (
+          <input value={field.value as string} onChange={field.onChange} className="w-full border rounded px-3 py-2" />
+        )} />
         {errors.location && <span className="text-red-500">{errors.location.message}</span>}
       </div>
 
       <div>
         <label className="block mb-1">New Cartons</label>
-        <input {...register('new_cartons', { valueAsNumber: true })} type="number" className="w-full border rounded px-3 py-2" />
+        <Controller name="new_cartons" control={control} render={({ field }) => (
+          <input value={field.value as number} onChange={field.onChange} type="number" className="w-full border rounded px-3 py-2" />
+        )} />
         {errors.new_cartons && <span className="text-red-500">{errors.new_cartons.message}</span>}
       </div>
 
       <div>
         <label className="block mb-1">New Loose Pieces</label>
-        <input {...register('new_loose_pieces', { valueAsNumber: true })} type="number" className="w-full border rounded px-3 py-2" />
+        <Controller name="new_loose_pieces" control={control} render={({ field }) => (
+          <input value={field.value as number} onChange={field.onChange} type="number" className="w-full border rounded px-3 py-2" />
+        )} />
         {errors.new_loose_pieces && <span className="text-red-500">{errors.new_loose_pieces.message}</span>}
       </div>
 
       <div>
         <label className="block mb-1">Reason</label>
-        <textarea {...register('reason')} className="w-full border rounded px-3 py-2" rows={3} />
+        <Controller name="reason" control={control} render={({ field }) => (
+          <textarea value={field.value as string} onChange={field.onChange} className="w-full border rounded px-3 py-2" rows={3} />
+        )} />
         {errors.reason && <span className="text-red-500">{errors.reason.message}</span>}
       </div>
 

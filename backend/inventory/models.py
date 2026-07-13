@@ -1,3 +1,4 @@
+import datetime
 import uuid
 from django.db import models
 from django.core.validators import MinValueValidator
@@ -56,7 +57,7 @@ class Batch(models.Model):
     batch_number = models.CharField(max_length=50, unique=True, db_index=True)
     production_date = models.DateField()
     supplier = models.CharField(max_length=200)
-    received_date = models.DateField()
+    received_date = models.DateField(default=datetime.date.today)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

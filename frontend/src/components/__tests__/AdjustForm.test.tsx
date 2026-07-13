@@ -16,6 +16,14 @@ vi.mock('../../hooks/useInventoryQueries', () => ({
     data: null,
     error: null,
   })),
+  useTilesList: vi.fn(() => ({
+    data: { count: 0, results: [] },
+    isLoading: false,
+  })),
+  useBatchesList: vi.fn(() => ({
+    data: { count: 0, results: [] },
+    isLoading: false,
+  })),
 }))
 
 beforeEach(() => {
@@ -35,8 +43,8 @@ describe('AdjustForm', () => {
 
   it('shows required field labels', () => {
     render(<AdjustForm />)
-    expect(screen.getByText(/Tile ID/)).toBeInTheDocument()
-    expect(screen.getByText(/Batch ID/)).toBeInTheDocument()
+    expect(screen.getByText(/Tile/)).toBeInTheDocument()
+    expect(screen.getByText(/Batch/)).toBeInTheDocument()
     expect(screen.getByText(/Reason/)).toBeInTheDocument()
   })
 
