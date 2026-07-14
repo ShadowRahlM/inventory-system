@@ -227,6 +227,63 @@ export interface MovementSummary {
   by_type: MovementByType[];
 }
 
+export interface StockByCategory {
+  tile__category: string;
+  tile_count: number;
+  total_cartons: number;
+  total_loose: number;
+  total_pieces: number;
+}
+
+export interface StockByLocation {
+  location: string;
+  total_cartons: number;
+  total_loose: number;
+  total_pieces: number;
+  item_count: number;
+}
+
+export interface FastMover {
+  tile_id: string;
+  tile__sku: string;
+  tile__name: string;
+  movement_count: number;
+}
+
+export interface LowStockItem {
+  id: string;
+  tile_id: string;
+  sku: string;
+  name: string;
+  category: string;
+  batch_number: string;
+  location: string;
+  cartons: number;
+  loose_pieces: number;
+  pieces_per_carton: number;
+  total_pieces: number;
+}
+
+export interface LowStockDetail {
+  threshold: number;
+  count: number;
+  results: LowStockItem[];
+}
+
+export interface PeriodComparisonEntry {
+  movement_type: string;
+  current_count: number;
+  previous_count: number;
+  change_pct: number;
+}
+
+export interface PeriodComparison {
+  period: string;
+  current_since: string;
+  previous_since: string;
+  comparison: PeriodComparisonEntry[];
+}
+
 export type OrderStatus = 'DRAFT' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
 export interface Customer {

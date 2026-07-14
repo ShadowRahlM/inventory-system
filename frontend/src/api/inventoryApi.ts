@@ -21,6 +21,11 @@ import type {
   CatalogProcessResult,
   StockSummary,
   MovementSummary,
+  StockByCategory,
+  StockByLocation,
+  FastMover,
+  LowStockDetail,
+  PeriodComparison,
   Customer,
   Supplier,
   SalesOrder,
@@ -126,6 +131,25 @@ export const inventoryApi = {
       api.get<StockSummary>('/inventory/reports/stock_summary/').then(r => r.data),
     movementSummary: (period: 'day' | 'week' | 'month' = 'month') =>
       api.get<MovementSummary>(`/inventory/reports/movement_summary/?period=${period}`).then(r => r.data),
+    stockByCategory: () =>
+      api.get<StockByCategory[]>('/inventory/reports/stock_by_category/').then(r => r.data),
+    stockByLocation: () =>
+      api.get<StockByLocation[]>('/inventory/reports/stock_by_location/').then(r => r.data),
+    fastMovers: (limit = 15) =>
+      api.get<FastMover[]>(`/inventory/reports/fast_movers/?limit=${limit}`).then(r => r.data),
+    lowStockDetail: (threshold = 50) =>
+      api.get<LowStockDetail>(`/inventory/reports/low_stock_detail/?threshold=${threshold}`).then(r => r.data),
+    periodComparison: (period: 'day' | 'week' | 'month' = 'month') =>
+      api.get<PeriodComparison>(`/inventory/reports/period_comparison/?period=${period}`).then(r => r.data),
+    exportPdf: () =>
+      api.get('/inventory/reports/export_pdf/', { responseType: 'blob' }).then(r => {
+        const url = URL.createObjectURL(r.data as Blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'stock_summary.pdf';
+        a.click();
+        URL.revokeObjectURL(url);
+      }),
   },
 
   operations: {

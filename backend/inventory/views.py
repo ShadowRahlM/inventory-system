@@ -499,6 +499,121 @@ class ReportViewSet(viewsets.ViewSet):
         })
 
     @action(detail=False, methods=['get'])
+    def stock_by_category(self, request):
+        rows = (
+            Inventory.objects
+            .values('tile__category')
+            .annotate(
+                tile_count=Count('tile_id', distinct=True),
+                total_cartons=Sum('cartons'),
+                total_loose=Sum('loose_pieces'),
+                total_pieces=Sum(F('cartons') * F('tile__pieces_per_carton') + F('loose_pieces')),
+            )
+            .order_by('-total_pieces')
+        )
+        return Response(list(rows))
+
+    @action(detail=False, methods=['get'])
+    def stock_by_location(self, request):
+        rows = (
+            Inventory.objects
+            .values('location')
+            .annotate(
+                total_cartons=Sum('cartons'),
+                total_loose=Sum('loose_pieces'),
+                total_pieces=Sum(F('cartons') * F('tile__pieces_per_carton') + F('loose_pieces')),
+                item_count=Count('id'),
+            )
+            .order_by('-total_pieces')
+        )
+        return Response(list(rows))
+
+    @action(detail=False, methods=['get'])
+    def fast_movers(self, request):
+        limit = int(request.query_params.get('limit', 15))
+        since = timezone.now() - timezone.timedelta(days=365)
+        rows = (
+            Movement.objects.filter(created_at__gte=since)
+            .values('tile_id', 'tile__sku', 'tile__name')
+            .annotate(movement_count=Count('id'))
+            .order_by('-movement_count')[:limit]
+        )
+        return Response(list(rows))
+
+    @action(detail=False, methods=['get'])
+    def low_stock_detail(self, request):
+        threshold = int(request.query_params.get('threshold', 50))
+        rows = (
+            Inventory.objects
+            .select_related('tile', 'batch')
+            .annotate(_total=F('cartons') * F('tile__pieces_per_carton') + F('loose_pieces'))
+            .filter(_total__lte=threshold)
+            .order_by('_total')
+            .values('id', 'tile_id', 'cartons', 'loose_pieces', 'location', '_total',
+                    tile_sku=F('tile__sku'), tile_name=F('tile__name'),
+                    tile_category=F('tile__category'), tile_ppc=F('tile__pieces_per_carton'),
+                    batch_number=F('batch__batch_number'))
+        )
+        data = [{
+            'id': str(r['id']),
+            'tile_id': str(r['tile_id']),
+            'sku': r['tile_sku'],
+            'name': r['tile_name'],
+            'category': r['tile_category'],
+            'batch_number': r['batch_number'],
+            'location': r['location'],
+            'cartons': r['cartons'],
+            'loose_pieces': r['loose_pieces'],
+            'pieces_per_carton': r['tile_ppc'],
+            'total_pieces': r['_total'],
+        } for r in rows]
+        return Response({'threshold': threshold, 'count': len(data), 'results': data})
+
+    @action(detail=False, methods=['get'])
+    def period_comparison(self, request):
+        now = timezone.now()
+        period = request.query_params.get('period', 'month')
+        delta = {'day': 7, 'week': 30, 'month': 365}[period]
+        prev_delta = delta * 2
+
+        current_start = now - timezone.timedelta(days=delta)
+        prev_start = now - timezone.timedelta(days=prev_delta)
+
+        def get_counts(since):
+            return dict(
+                Movement.objects.filter(created_at__gte=since, created_at__lt=now if since == current_start else current_start)
+                .values('movement_type')
+                .annotate(count=Count('id'))
+                .values_list('movement_type', 'count')
+            )
+
+        current = get_counts(current_start)
+        previous = get_counts(prev_start)
+        all_types = set(list(current.keys()) + list(previous.keys()))
+
+        comparison = []
+        for t in sorted(all_types):
+            cur = current.get(t, 0)
+            prev = previous.get(t, 0)
+            if prev > 0:
+                change_pct = round((cur - prev) / prev * 100, 1)
+            else:
+                change_pct = 100.0 if cur > 0 else 0.0
+            comparison.append({
+                'movement_type': t,
+                'current_count': cur,
+                'previous_count': prev,
+                'change_pct': change_pct,
+            })
+
+        return Response({
+            'period': period,
+            'current_since': current_start.isoformat(),
+            'previous_since': prev_start.isoformat(),
+            'comparison': comparison,
+        })
+
+    @action(detail=False, methods=['get'])
     def export_pdf(self, request):
         from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors
