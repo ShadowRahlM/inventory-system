@@ -16,6 +16,9 @@ const { inventoryApi } = vi.hoisted(() => {
         update: vi.fn().mockImplementation((id: string) => Promise.resolve({ ...t1, id })),
         delete: vi.fn().mockResolvedValue({}),
       },
+      stock: {
+        list: vi.fn().mockResolvedValue({ count: 0, results: [] }),
+      },
     },
   }
 })
@@ -28,13 +31,10 @@ beforeEach(() => {
 })
 
 describe('TileList', () => {
-  it('renders tile table with headers', async () => {
+  it('renders location group headers', async () => {
     render(<TileList />)
-    expect(await screen.findByText('SKU')).toBeInTheDocument()
-    expect(await screen.findByText('Name')).toBeInTheDocument()
-    expect(await screen.findByText('Brand')).toBeInTheDocument()
-    expect(await screen.findByText('Category')).toBeInTheDocument()
-    expect(await screen.findByText('Mix')).toBeInTheDocument()
+    expect(await screen.findByText('Unstocked')).toBeInTheDocument()
+    expect(await screen.findByText('2 products')).toBeInTheDocument()
   })
 
   it('renders tile data from API', async () => {
@@ -43,13 +43,13 @@ describe('TileList', () => {
     expect(await screen.findByText('SKU-002')).toBeInTheDocument()
   })
 
-  it('renders select-all checkbox', async () => {
+  it('renders checkboxes for admin', async () => {
     render(<TileList />)
     const checkboxes = await screen.findAllByRole('checkbox')
     expect(checkboxes.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders action buttons per row', async () => {
+  it('renders action buttons per card', async () => {
     render(<TileList />)
     const editButtons = await screen.findAllByRole('button', { name: /edit/i })
     const deleteButtons = await screen.findAllByRole('button', { name: /delete/i })

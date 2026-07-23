@@ -26,7 +26,7 @@ beforeEach(() => {
 describe('NewTile', () => {
   it('renders form heading', () => {
     render(<NewTile />)
-    expect(screen.getByText('New Tile')).toBeInTheDocument()
+    expect(screen.getByText('New Product')).toBeInTheDocument()
   })
 
   it('renders brand selector with options', () => {
@@ -39,9 +39,9 @@ describe('NewTile', () => {
 
   it('renders SKU, name, and dimensions fields', () => {
     render(<NewTile />)
-    expect(screen.getByText(/SKU/)).toBeInTheDocument()
-    expect(screen.getByText(/Name/)).toBeInTheDocument()
-    expect(screen.getByText(/Dimensions/)).toBeInTheDocument()
+    expect(screen.getByText('SKU *')).toBeInTheDocument()
+    expect(screen.getByText('Name *')).toBeInTheDocument()
+    expect(screen.getByText('Dimensions *')).toBeInTheDocument()
   })
 
   it('renders image upload field', () => {

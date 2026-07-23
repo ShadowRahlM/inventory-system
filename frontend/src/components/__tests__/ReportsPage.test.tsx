@@ -85,9 +85,9 @@ describe('ReportsPage', () => {
 
   it('changes period on select change', async () => {
     render(<ReportsPage />)
-    const select = await screen.findByDisplayValue('Last 365 days')
+    const select = await screen.findByDisplayValue('Last 365 vs prev 365 days')
     fireEvent.change(select, { target: { value: 'day' } })
-    expect(await screen.findByDisplayValue('Last 7 days')).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('Last 7 vs prev 7 days')).toBeInTheDocument()
   })
 
   it('renders Movement Trends heading', async () => {

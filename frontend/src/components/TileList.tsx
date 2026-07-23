@@ -1,10 +1,16 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '../api/inventoryApi';
 import { INVENTORY_KEYS } from '../hooks/useInventoryQueries';
 import { useAuthStore } from '../lib/store';
-import type { TileProduct } from '../types/inventory';
+import type { TileProduct, StockLevel } from '../types/inventory';
+
+interface LocationGroup {
+  location: string;
+  products: Array<{ tile: TileProduct; stock?: StockLevel }>;
+  totalItems: number;
+}
 
 export function TileList() {
   const queryClient = useQueryClient();
@@ -17,6 +23,7 @@ export function TileList() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteId, setBulkDeleteId] = useState<Set<string> | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const editId = searchParams.get('edit');
 
@@ -30,6 +37,54 @@ export function TileList() {
     queryKey: [...INVENTORY_KEYS.tiles(), 'list', search],
     queryFn: () => inventoryApi.tiles.list(search ? { search, page_size: 5000 } : { page_size: 5000 }),
   });
+
+  const { data: allStock } = useQuery({
+    queryKey: [...INVENTORY_KEYS.stock(), 'all'],
+    queryFn: () => inventoryApi.stock.list({ page_size: 5000 }),
+  });
+
+  const toggleGroup = (name: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const stockByTile = useMemo(() => {
+    const map = new Map<string, StockLevel[]>();
+    for (const s of allStock?.results ?? []) {
+      const existing = map.get(s.tile) ?? [];
+      existing.push(s);
+      map.set(s.tile, existing);
+    }
+    return map;
+  }, [allStock]);
+
+  const locationGroups = useMemo(() => {
+    const tileList = (tiles?.results ?? []) as TileProduct[];
+    const matched = tileList.map(tile => ({ tile, stocks: stockByTile.get(tile.id) ?? [] }));
+
+    const groups = new Map<string, LocationGroup>();
+    for (const { tile, stocks } of matched) {
+      if (stocks.length === 0) {
+        const g = groups.get('Unstocked') ?? { location: 'Unstocked', products: [], totalItems: 0 };
+        g.products.push({ tile });
+        groups.set('Unstocked', g);
+      } else {
+        for (const s of stocks) {
+          const loc = s.location || 'Unknown';
+          const g = groups.get(loc) ?? { location: loc, products: [], totalItems: 0 };
+          if (!g.products.some(p => p.tile.id === tile.id)) {
+            g.products.push({ tile, stock: s });
+          }
+          g.totalItems += s.total_pieces;
+        }
+      }
+    }
+    return Array.from(groups.values()).sort((a, b) => a.location.localeCompare(b.location));
+  }, [tiles, stockByTile]);
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => inventoryApi.tiles.delete(id),
@@ -61,9 +116,6 @@ export function TileList() {
     },
   });
 
-  const allIds = useMemo(() => tiles?.results?.map((t) => t.id) ?? [], [tiles]);
-  const allSelected = allIds.length > 0 && selectedIds.size === allIds.length;
-
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -73,25 +125,33 @@ export function TileList() {
     });
   }, []);
 
-  const toggleAll = useCallback(() => {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(allIds));
-    }
-  }, [allSelected, allIds]);
+  const filteredGroups = useMemo(() => {
+    if (!search.trim()) return locationGroups;
+    return locationGroups
+      .map(g => ({
+        ...g,
+        products: g.products.filter(p =>
+          p.tile.sku.toLowerCase().includes(search.toLowerCase()) ||
+          p.tile.name.toLowerCase().includes(search.toLowerCase()) ||
+          p.tile.brand?.toLowerCase().includes(search.toLowerCase())
+        ),
+      }))
+      .filter(g => g.products.length > 0);
+  }, [locationGroups, search]);
+
+  const totalTiles = tiles?.count ?? 0;
 
   return (
     <div>
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-4 mb-6">
         <input
           type="text"
           placeholder="Search by SKU, name, brand..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        <span className="text-sm text-muted-foreground">{tiles?.count ?? 0} tiles</span>
+        <span className="text-sm text-muted-foreground">{totalTiles} tiles</span>
         {isLoading && <span className="text-xs text-muted-foreground animate-pulse">Loading...</span>}
       </div>
 
@@ -118,89 +178,101 @@ export function TileList() {
         </div>
       )}
 
-      {!error && (!tiles?.results || tiles.results.length === 0) && !search && !isLoading ? (
+      {!error && (!tiles?.results || tiles.results.length === 0) && !isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg">No tiles found</p>
           <p className="text-sm mt-1">Create a new tile to get started</p>
         </div>
-      ) : !error && tiles?.results?.length === 0 && search && !isLoading ? (
+      ) : !error && filteredGroups.length === 0 && !isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg">No tiles match your search</p>
         </div>
       ) : !error ? (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border">
-            <thead>
-              <tr className="bg-muted/50">
-                {isAdmin && (
-                  <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground w-10">
-                    <input type="checkbox" checked={allSelected} onChange={toggleAll} className="cursor-pointer" />
-                  </th>
-                )}
-                <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground">Image</th>
-                <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground">SKU</th>
-                <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground">Name</th>
-                <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground">Brand</th>
-                <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground">Series</th>
-                <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground">Tier</th>
-                <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground">Dimensions</th>
-                <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground">Pcs/Ctn</th>
-                <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground">Category</th>
-                <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground">Mix</th>
-                <th className="text-left px-4 py-2 text-sm font-medium text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tiles?.results?.map((tile: TileProduct) => (
-                <tr key={tile.id} className={`border-b hover:bg-muted/50 ${selectedIds.has(tile.id) ? 'bg-primary/5' : ''}`}>
-                  {isAdmin && (
-                    <td className="px-4 py-2">
-                      <input type="checkbox" checked={selectedIds.has(tile.id)} onChange={() => toggleSelect(tile.id)} className="cursor-pointer" />
-                    </td>
+        <div className="space-y-8">
+          {filteredGroups.map(group => {
+            const isCollapsed = collapsedGroups.has(group.location);
+            return (
+              <div key={group.location}>
+                <button
+                  onClick={() => toggleGroup(group.location)}
+                  className="w-full flex items-center justify-between p-4 bg-[#F7F7F7] dark:bg-muted/30 rounded-xl border hover:shadow-sm transition-shadow mb-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm transition-transform" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
+                    <h2 className="text-lg font-semibold">{group.location}</h2>
+                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                      {group.products.length} products
+                    </span>
+                    {group.location !== 'Unstocked' && (
+                      <span className="text-xs text-muted-foreground">{group.totalItems} items</span>
+                    )}
+                  </div>
+                  {group.products.some(p => (p.stock?.total_pieces ?? 0) <= 50 && (p.stock?.total_pieces ?? 0) > 0) && (
+                    <span className="text-xs text-red-500 font-medium">⚠ Low stock</span>
                   )}
-                  <td className="px-4 py-2">
-                    {tile.image ? (
-                      <img src={tile.image} alt={tile.sku} className="w-12 h-12 object-cover rounded" loading="lazy" />
-                    ) : (
-                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center text-muted-foreground text-xs">—</div>
-                    )}
-                  </td>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-1">
-                      {tile.sku}
-                      <a href={`https://www.google.com/search?q=${encodeURIComponent(tile.sku + ' tile')}`} target="_blank" rel="noopener noreferrer" className="text-primary/60 hover:text-primary text-xs" title="Search on Google">🔍</a>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2">{tile.name}</td>
-                  <td className="px-4 py-2 text-sm">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${tile.brand === 'crown_crane' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' : tile.brand === 'goodwill' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>
-                      {tile.brand === 'crown_crane' ? 'Crown Crane' : tile.brand === 'goodwill' ? 'Goodwill' : tile.brand}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2 text-sm text-muted-foreground">{tile.series || '—'}</td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${tile.tier === 'premium' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'}`}>
-                      {tile.tier === 'premium' ? 'Premium' : 'Standard'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">{tile.dimensions}</td>
-                  <td className="px-4 py-2">{tile.pieces_per_carton}</td>
-                  <td className="px-4 py-2">{tile.category}</td>
-                  <td className="px-4 py-2">
-                    {tile.is_mix ? (
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">Yes</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2">
-                    <button onClick={() => setEditingTile(tile)} className="text-primary hover:text-primary/80 mr-2 text-sm">Edit</button>
-                    {isAdmin && <button onClick={() => { setDeleteId(tile.id); setDeleteError(null); }} className="text-destructive hover:text-destructive/80 text-sm">Delete</button>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                </button>
+
+                {!isCollapsed && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {group.products.map(({ tile, stock }) => {
+                      const onHand = stock?.total_pieces ?? 0;
+                      const isLowStock = onHand > 0 && onHand <= 50;
+                      return (
+                        <div
+                          key={tile.id}
+                          className={`bg-[#F7F7F7] dark:bg-muted/30 rounded-xl border overflow-hidden hover:shadow-md transition-shadow ${selectedIds.has(tile.id) ? 'ring-2 ring-primary' : ''}`}
+                        >
+                          {isAdmin && (
+                            <div className="absolute p-1">
+                              <input type="checkbox" checked={selectedIds.has(tile.id)} onChange={() => toggleSelect(tile.id)} className="cursor-pointer" />
+                            </div>
+                          )}
+                          <div className="w-full h-24 bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                            {tile.image ? (
+                              <img src={tile.image} alt={tile.sku} className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              tile.dimensions || 'No image'
+                            )}
+                          </div>
+                          <div className="p-3 space-y-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-bold text-primary truncate">{tile.sku}</span>
+                              <a href={`https://www.google.com/search?q=${encodeURIComponent(tile.sku + ' tile')}`} target="_blank" rel="noopener noreferrer" className="text-primary/60 hover:text-primary shrink-0" title="Search on Google">🔍</a>
+                            </div>
+                            <Link to={`/tiles/${tile.id}`} className="text-sm font-medium truncate hover:text-primary transition-colors">{tile.name}</Link>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {tile.brand && (
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${tile.brand === 'crown_crane' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' : tile.brand === 'goodwill' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>
+                                  {tile.brand === 'crown_crane' ? 'Crown Crane' : tile.brand === 'goodwill' ? 'Goodwill' : tile.brand}
+                                </span>
+                              )}
+                              {tile.tier && (
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${tile.tier === 'premium' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                                  {tile.tier === 'premium' ? 'Premium' : 'Standard'}
+                                </span>
+                              )}
+                              {tile.is_mix && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">Mix</span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between pt-1">
+                              <span className={`text-xs font-semibold ${isLowStock ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                {group.location !== 'Unstocked' ? `${onHand} on hand` : 'No stock'}
+                              </span>
+                              <div className="flex gap-2">
+                                <button onClick={() => setEditingTile(tile)} className="text-xs text-primary hover:underline">Edit</button>
+                                {isAdmin && <button onClick={() => { setDeleteId(tile.id); setDeleteError(null); }} className="text-xs text-destructive hover:underline">Delete</button>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : null}
 

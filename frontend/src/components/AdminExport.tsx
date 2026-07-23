@@ -35,21 +35,21 @@ export function AdminExport() {
     <div className="p-6">
       <PageHeader title="Data Export" description="Download all database data as a portable JSON file." />
 
-      <div className="rounded-lg border bg-card p-6 max-w-xl">
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300 mb-4">
-          ⚠️ Exports all data including user accounts, inventory, movements, and audit logs.
+      <div className="rounded-xl border bg-card p-6 shadow-sm max-w-xl">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-4 py-3 text-sm text-amber-800 dark:text-amber-300 mb-4">
+          Exports all data including user accounts, inventory, movements, and audit logs.
           Password hashes are <strong>not</strong> included — users must reset passwords on the destination machine.
         </div>
 
         {error && (
-          <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded mb-4 text-sm">
+          <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-md mb-4 text-sm">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="bg-green-100 dark:bg-green-900/20 border border-green-400 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded mb-4 text-sm">
-            ✓ Download started — saved as <strong>inventory_export.json</strong> in your Downloads folder.
+          <div className="bg-green-100 dark:bg-green-900/20 border border-green-400 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-md mb-4 text-sm">
+            Download started — saved as <strong>inventory_export.json</strong> in your Downloads folder.
           </div>
         )}
 
@@ -61,7 +61,7 @@ export function AdminExport() {
           {loading ? (
             <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            <>📥 Download Export</>
+            'Download Export'
           )}
         </button>
       </div>

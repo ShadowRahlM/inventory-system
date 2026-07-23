@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { inventoryApi } from '../api/inventoryApi';
 import { INVENTORY_KEYS } from '../hooks/useInventoryQueries';
+import { PageHeader } from './ui/PageHeader';
+import { EmptyState } from './ui/EmptyState';
 
 interface Props {
   compact?: boolean;
@@ -20,18 +22,16 @@ export function LowStockAlerts({ compact }: Props) {
 
   if (compact) {
     return (
-      <div className="rounded-lg border bg-card p-6">
+      <div className="rounded-xl border bg-card p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            ⚠️ Low Stock Alerts
-          </h2>
+          <h2 className="text-lg font-semibold">Low Stock Alerts</h2>
           <div className="flex items-center gap-2">
             <label className="text-sm text-muted-foreground">Threshold:</label>
             <input
               type="number"
               value={threshold}
               onChange={(e) => setThreshold(Math.max(1, parseInt(e.target.value) || 50))}
-              className="mt-1 w-16 rounded-md border bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-16 rounded-md border bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>
@@ -40,7 +40,7 @@ export function LowStockAlerts({ compact }: Props) {
         ) : isError ? (
           <p className="text-destructive text-sm">Failed to load stock data</p>
         ) : count === 0 ? (
-          <p className="text-green-600 text-sm">All stock levels are above {threshold} pieces ✓</p>
+          <p className="text-green-600 text-sm">All stock levels are above {threshold} pieces</p>
         ) : (
           <div>
             <p className="text-destructive text-sm font-medium mb-2">
@@ -70,43 +70,47 @@ export function LowStockAlerts({ compact }: Props) {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Low Stock Alerts</h1>
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-muted-foreground">Threshold (pieces):</label>
-          <input
-            type="number"
-            value={threshold}
-            onChange={(e) => setThreshold(Math.max(1, parseInt(e.target.value) || 50))}
-            className="mt-1 w-20 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-      </div>
+      <PageHeader
+        title="Low Stock Alerts"
+        description={`Items with ${threshold} or fewer total pieces`}
+        actions={
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground">Threshold:</label>
+            <input
+              type="number"
+              value={threshold}
+              onChange={(e) => setThreshold(Math.max(1, parseInt(e.target.value) || 50))}
+              className="w-20 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+        }
+      />
 
       {isLoading ? (
         <p className="text-muted-foreground">Loading...</p>
       ) : isError ? (
         <p className="text-destructive">Failed to load low stock data</p>
       ) : count === 0 ? (
-        <div className="rounded-lg border bg-card p-8 text-center">
-          <p className="text-green-600 text-lg font-medium">All stock levels are above {threshold} pieces ✓</p>
-        </div>
+        <EmptyState
+          title="All stocked up"
+          description={`All stock levels are above ${threshold} pieces.`}
+        />
       ) : (
-        <div className="rounded-lg border bg-card overflow-x-auto">
+        <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
           <table className="min-w-full">
             <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Tile SKU</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Batch</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Location</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Cartons</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Loose</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Total</th>
+              <tr className="border-b bg-[#F7F7F7]">
+                <th className="text-left py-3 px-4 text-sm font-semibold">Tile SKU</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold">Batch</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold">Location</th>
+                <th className="text-right py-3 px-4 text-sm font-semibold">Cartons</th>
+                <th className="text-right py-3 px-4 text-sm font-semibold">Loose</th>
+                <th className="text-right py-3 px-4 text-sm font-semibold">Total</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.id} className={`border-b hover:bg-muted/50 ${item.total_pieces <= 10 ? 'bg-red-50 dark:bg-red-900/10' : 'bg-amber-50 dark:bg-amber-900/10'}`}>
+                <tr key={item.id} className={`border-b hover:bg-muted/50 transition-colors duration-150 ${item.total_pieces <= 10 ? 'bg-red-50 dark:bg-red-900/10' : 'bg-amber-50 dark:bg-amber-900/10'}`}>
                   <td className="py-3 px-4 font-medium">{item.tile_sku}</td>
                   <td className="py-3 px-4">{item.batch_number}</td>
                   <td className="py-3 px-4">{item.location}</td>

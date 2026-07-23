@@ -247,6 +247,9 @@ export interface FastMover {
   tile_id: string;
   tile__sku: string;
   tile__name: string;
+  tile__dimensions?: string;
+  tile__category?: string;
+  tile__pieces_per_carton?: number;
   movement_count: number;
 }
 

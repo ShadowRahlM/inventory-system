@@ -60,17 +60,19 @@ export function Sidebar() {
             {sidebarOpen && <span className="ml-3">{item.name}</span>}
           </Link>
         ))}
+        {(isAdmin || user?.role === 'manager') && (
+          <Link
+            to="/stock-take"
+            className={`flex items-center px-4 py-3 hover:bg-gray-700/70 transition-colors duration-150 ${
+              location.pathname === '/stock-take' ? 'bg-gray-700/70 border-r-4 border-blue-500' : ''
+            }`}
+          >
+            <span className="text-xl">📥</span>
+            {sidebarOpen && <span className="ml-3">Stock Take</span>}
+          </Link>
+        )}
         {isAdmin && (
           <>
-            <Link
-              to="/stock-take"
-              className={`flex items-center px-4 py-3 hover:bg-gray-700/70 transition-colors duration-150 ${
-                location.pathname === '/stock-take' ? 'bg-gray-700/70 border-r-4 border-blue-500' : ''
-              }`}
-            >
-              <span className="text-xl">📥</span>
-              {sidebarOpen && <span className="ml-3">Stock Take</span>}
-            </Link>
             <Link
               to="/catalogs"
               className={`flex items-center px-4 py-3 hover:bg-gray-700/70 transition-colors duration-150 ${

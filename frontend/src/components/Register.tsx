@@ -8,6 +8,7 @@ export function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,12 +18,12 @@ export function Register() {
       setError('Passwords do not match');
       return;
     }
-
     if (password.length < 4) {
       setError('Password must be at least 4 characters');
       return;
     }
 
+    setLoading(true);
     try {
       await authAPI.register(username, password);
       navigate('/login');
@@ -40,19 +41,28 @@ export function Register() {
       } else {
         setError('Registration failed. Please try again.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <form onSubmit={handleRegister} className="rounded-lg border bg-card p-8 w-96">
-        <h2 className="text-2xl font-bold tracking-tight mb-6">Register</h2>
-        {error && (
-          <div className="mb-4 bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded text-sm">
-            {error}
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-background">
+      <div className="w-full max-w-sm mx-4">
+        <div className="text-center mb-8">
+          <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+            <span className="text-2xl font-bold text-primary-foreground">I</span>
           </div>
-        )}
-        <div className="space-y-4">
+          <h1 className="text-2xl font-bold tracking-tight">Create Account</h1>
+          <p className="text-sm text-muted-foreground mt-1">Register to access the inventory system</p>
+        </div>
+
+        <form onSubmit={handleRegister} className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
           <div>
             <label htmlFor="register-username" className="block text-sm font-medium mb-1">Username</label>
             <input
@@ -60,7 +70,8 @@ export function Register() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Choose a username"
               autoFocus
               required
             />
@@ -72,7 +83,8 @@ export function Register() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Create a password"
               required
               minLength={4}
             />
@@ -84,24 +96,26 @@ export function Register() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Confirm your password"
               required
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
+            className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
           >
-            Register
+            {loading ? 'Creating account...' : 'Create Account'}
           </button>
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link to="/login" className="text-primary underline hover:text-primary/80">
-              Login
+            <Link to="/login" className="text-primary font-medium hover:underline">
+              Sign in
             </Link>
           </p>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

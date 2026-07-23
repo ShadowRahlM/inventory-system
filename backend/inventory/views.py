@@ -534,7 +534,7 @@ class ReportViewSet(viewsets.ViewSet):
         since = timezone.now() - timezone.timedelta(days=365)
         rows = (
             Movement.objects.filter(created_at__gte=since)
-            .values('tile_id', 'tile__sku', 'tile__name')
+            .values('tile_id', 'tile__sku', 'tile__name', 'tile__dimensions', 'tile__category', 'tile__pieces_per_carton')
             .annotate(movement_count=Count('id'))
             .order_by('-movement_count')[:limit]
         )

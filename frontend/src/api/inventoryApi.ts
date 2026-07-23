@@ -161,7 +161,7 @@ export const inventoryApi = {
       api.post<ApiResponse<AdjustResult>>('/inventory/operations/adjust/', payload).then(extractData),
     transfer: (payload: TransferPayload) =>
       api.post<ApiResponse<TransferResult>>('/inventory/operations/transfer/', payload).then(extractData),
-    stockTake: (payload: { data: Record<string, unknown> }) =>
+    stockTake: (payload: { data: unknown }) =>
       api.post<ApiResponse<StockTakeResult>>('/inventory/operations/stock_take/', payload).then(extractData),
   },
 

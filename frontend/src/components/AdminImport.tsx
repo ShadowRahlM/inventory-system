@@ -59,9 +59,9 @@ export function AdminImport() {
     <div className="p-6">
       <PageHeader title="Data Import" description="Upload a previously exported JSON file to restore data." />
 
-      <div className="rounded-lg border bg-card p-6 max-w-xl mb-6">
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300 mb-4">
-          ⚠️ Users are created with unusable passwords — they must reset on login.
+      <div className="rounded-xl border bg-card p-6 shadow-sm max-w-xl mb-6">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-4 py-3 text-sm text-amber-800 dark:text-amber-300 mb-4">
+          Users are created with unusable passwords — they must reset on login.
           Existing records (same ID) are skipped without error.
         </div>
 
@@ -70,12 +70,12 @@ export function AdminImport() {
           type="file"
           accept=".json"
           onChange={handleFileChange}
-          className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 mb-4"
+          className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 mb-4"
         />
 
         {fileName && (
           <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 mb-4">
-            <span>✓</span> <span>Selected: <strong>{fileName}</strong></span>
+            <span>Selected: <strong>{fileName}</strong></span>
           </div>
         )}
 
@@ -83,12 +83,12 @@ export function AdminImport() {
           <button
             onClick={() => doImport(true)}
             disabled={!fileName || loading}
-            className="rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {loading ? (
               <span className="inline-block w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
             ) : (
-              '🔍 Preview'
+              'Preview'
             )}
           </button>
           <button
@@ -99,26 +99,26 @@ export function AdminImport() {
             {loading ? (
               <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              '📥 Import'
+              'Import'
             )}
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded max-w-xl mb-6 text-sm">
+        <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-md max-w-xl mb-6 text-sm">
           {error}
         </div>
       )}
 
       {result && (
-        <div className="rounded-lg border bg-card max-w-xl">
-          <div className="p-4 border-b bg-muted/50 font-medium text-sm">
+        <div className="rounded-xl border bg-card shadow-sm max-w-xl">
+          <div className="p-4 border-b bg-[#F7F7F7] font-medium text-sm">
             Import from {result.version} (exported {result.exported_at})
           </div>
           {result.preview && (
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-300">
-              ⚠️ This was a <strong>preview</strong> — no data was written. Click "Import" to execute.
+              This was a <strong>preview</strong> — no data was written. Click Import to execute.
             </div>
           )}
           <div className="p-4">

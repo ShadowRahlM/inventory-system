@@ -1,9 +1,7 @@
-import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/query-client';
 import { useAuthStore, useUIStore } from './lib/store';
-import { authAPI } from './lib/api';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { TileList } from './components/TileList';
@@ -12,6 +10,7 @@ import { InventoryPage } from './components/InventoryPage';
 import { UserManagement } from './components/UserManagement';
 import { LowStockAlerts } from './components/LowStockAlerts';
 import { ReportsPage } from './components/ReportsPage';
+import { ProductDetail } from './components/ProductDetail';
 import { Catalogs } from './components/Catalogs';
 import { OrdersPage } from './components/OrdersPage';
 import { CustomerSupplierPage } from './components/CustomerSupplierPage';
@@ -21,91 +20,16 @@ import { AdminExport } from './components/AdminExport';
 import { AdminImport } from './components/AdminImport';
 import { StockTake } from './components/StockTake';
 import { Register } from './components/Register';
-import { useSessionTimeout, initSession, getRedirectPath, clearRedirectPath } from './lib/useSessionTimeout';
+import { Login } from './components/Login';
+import { useSessionTimeout } from './lib/useSessionTimeout';
 import { useWebSocket } from './hooks/useWebSocket';
 
-function Login() {
-  const { setAuth } = useAuthStore();
-  const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const response = await authAPI.login(username, password);
-      const { access, refresh } = response.data;
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
-      initSession();
-      try {
-        const userInfo = await authAPI.me();
-        setAuth(true, userInfo);
-      } catch {
-        setAuth(true, { username, role: 'viewer' });
-      }
-      const redirect = getRedirectPath()
-      clearRedirectPath()
-      navigate(redirect || '/', { replace: true })
-    } catch {
-      setError('Invalid username or password');
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <form onSubmit={handleLogin} className="rounded-lg border bg-card p-8 w-96">
-        <h2 className="text-2xl font-bold tracking-tight mb-6">Login</h2>
-        {error && (
-          <div className="mb-4 bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded text-sm">
-            {error}
-          </div>
-        )}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              autoFocus
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
-            Login
-          </button>
-          <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary underline hover:text-primary/80">
-              Create one
-            </Link>
-          </p>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-function ProtectedRoute({ children, adminOnly }: { children: React.ReactNode; adminOnly?: boolean }) {
+function ProtectedRoute({ children, adminOnly, managerPlus }: { children: React.ReactNode; adminOnly?: boolean; managerPlus?: boolean }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   if (!isAuthenticated) return <Navigate to="/login" />;
   if (adminOnly && user?.role !== 'admin') return <Navigate to="/" />;
+  if (managerPlus && user?.role !== 'admin' && user?.role !== 'manager') return <Navigate to="/" />;
   return <>{children}</>;
 }
 
@@ -141,10 +65,12 @@ function App() {
                 } />
                 <Route path="/tiles" element={
                   <ProtectedRoute>
-                    <div className="p-6">
-                      <h1 className="text-3xl font-bold mb-6">Tiles</h1>
-                      <TileList />
-                    </div>
+                    <TileList />
+                  </ProtectedRoute>
+                } />
+                <Route path="/tiles/:id" element={
+                  <ProtectedRoute>
+                    <ProductDetail />
                   </ProtectedRoute>
                 } />
                 <Route path="/batches" element={
@@ -168,7 +94,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/stock-take" element={
-                  <ProtectedRoute adminOnly>
+                  <ProtectedRoute managerPlus>
                     <StockTake />
                   </ProtectedRoute>
                 } />

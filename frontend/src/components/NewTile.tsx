@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { INVENTORY_KEYS } from '../hooks/useInventoryQueries';
+import { PageHeader } from './ui/PageHeader';
 import type { TileProduct } from '../types/inventory';
 
 const BRANDS = [
@@ -105,10 +106,10 @@ export function NewTile() {
       : [];
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold tracking-tight mb-6">New Tile</h1>
+    <div className="p-6 space-y-6 bg-[#FAFAFA] dark:bg-background min-h-screen">
+      <PageHeader title="New Product" description="Register a new tile or SKU in the inventory system" />
 
-      <form onSubmit={handleSubmit} className="rounded-lg border bg-card p-6 space-y-5">
+      <form onSubmit={handleSubmit} className="rounded-xl border bg-card p-6 shadow-sm space-y-5 max-w-3xl">
         {createMutation.isError && (
           <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded text-sm">
             {createMutation.error?.message ?? 'Failed to create tile'}
@@ -186,8 +187,8 @@ export function NewTile() {
           <label htmlFor="is_mix" className="text-sm font-medium">Mixed/Temporary Bin</label>
         </div>
 
-        <fieldset className="border rounded p-4 space-y-4">
-          <legend className="text-sm font-semibold px-2">Specifications</legend>
+        <fieldset className="border rounded-xl p-5 space-y-4 bg-[#F7F7F7] dark:bg-muted/30">
+          <legend className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-2">Specifications</legend>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="block text-sm font-medium mb-1">Type</label>
@@ -225,12 +226,12 @@ export function NewTile() {
           <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} className="w-full text-sm text-muted-foreground" />
         </div>
 
-        <div className="flex gap-3 pt-2">
-          <button type="submit" disabled={createMutation.isPending} className="rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
-            {createMutation.isPending ? 'Saving...' : 'Save Tile'}
-          </button>
-          <button type="button" onClick={() => navigate('/tiles')} className="rounded-md border bg-background px-6 py-2 text-sm font-medium hover:bg-muted">Cancel</button>
-        </div>
+          <div className="flex gap-3 pt-2">
+            <button type="submit" disabled={createMutation.isPending} className="rounded-md bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
+              {createMutation.isPending ? 'Saving...' : 'Save Tile'}
+            </button>
+            <button type="button" onClick={() => navigate('/tiles')} className="rounded-md border bg-background px-6 py-2.5 text-sm font-medium hover:bg-muted transition-colors">Cancel</button>
+          </div>
       </form>
     </div>
   );
